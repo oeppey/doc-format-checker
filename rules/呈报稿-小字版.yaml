@@ -1,0 +1,89 @@
+# 呈报稿（小字版）：一般适用于正式红头文件
+meta:
+  id: chengbaogao_xiaozi
+  name: 呈报稿（小字版）
+  version: "0.1"
+  source: 《常用公文格式》内部要求，参考 GB/T 9704-2012
+
+rules:
+  - id: page-setup
+    name: 页面设置
+    severity: error
+    checker: page_setup
+    params:
+      top_cm: 3.8
+      bottom_cm: 3.3
+      left_cm: 2.7
+      right_cm: 2.7
+      tolerance_cm: 0.05
+
+  - id: font-title
+    name: 标题字体字号
+    severity: error
+    checker: font_format
+    params:
+      role: title
+      fonts: [方正小标宋_GBK, 方正小标宋GBK, 方正小标宋简体]
+      size_pt: 22          # 二号
+      bold: false
+      alignment: center
+
+  - id: font-body
+    name: 正文字体字号
+    severity: error
+    checker: font_format
+    params:
+      role: body
+      fonts: [方正仿宋_GBK, 方正仿宋GBK, 方正仿宋简体]
+      ascii_fonts: [仿宋, FangSong, 仿宋_GBK, 方正仿宋_GBK, 方正仿宋GBK]
+      size_pt: 16          # 三号
+      bold: false
+
+  - id: font-heading-1
+    name: 一级标题字体字号
+    severity: error
+    checker: font_format
+    params:
+      role: heading1
+      fonts: [方正黑体_GBK, 方正黑体GBK, 方正黑体简体]
+      size_pt: 16          # 三号
+      bold: false
+
+  - id: font-heading-2
+    name: 二级标题字体字号
+    severity: error
+    checker: font_format
+    params:
+      role: heading2
+      fonts: [方正楷体_GBK, 方正楷体GBK, 方正楷体简体]
+      size_pt: 16          # 三号
+      bold: false
+
+  - id: line-spacing
+    name: 行距
+    severity: error
+    checker: line_spacing
+    params:
+      roles: [title, body, heading1, heading2, heading3, heading4, attachment, signature, date]
+      line_pt: 29.5        # 固定值 29.5 磅
+      tolerance_pt: 0.5
+
+  - id: char-spacing
+    name: 字符间距
+    severity: error
+    checker: char_spacing
+    params:
+      roles: [title, body, heading1, heading2, heading3, heading4]
+      spacing_pt: 0.0      # 标准
+      tolerance_pt: 0.05
+
+  - id: secrecy-format
+    name: 秘级格式
+    severity: error
+    checker: secrecy
+    params:
+      fonts: [方正黑体_GBK, 方正黑体GBK, 方正黑体简体]
+      size_pt: 16          # 三号
+      bold: true
+      inner_space: true
+      required: false

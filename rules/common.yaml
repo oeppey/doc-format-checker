@@ -1,0 +1,43 @@
+# 通用规则（源自《常用公文格式》"其他注意事项"及 GB/T 9704-2012）
+# 被各文书类型规则集继承，类型内同名规则可覆盖 params。
+meta:
+  id: common
+  name: 通用注意事项
+  version: "0.1"
+
+rules:
+  - id: page-number
+    name: 页码格式
+    severity: error
+    checker: page_number
+    params:
+      dash: "—"            # 一字线
+      alignment: center    # 左右居中
+      fonts: [宋体, SimSun]
+      size_pt: 14          # 四号
+      footer_distance_cm: 1.75
+      tolerance_cm: 0.1
+
+  - id: heading-number
+    name: 标题序号
+    severity: error
+    checker: heading_number
+    params: {}             # 一级"一、" 二级"（一）" 三级"1." 四级"（1）"，三级四级右侧不空格
+
+  - id: attachment-format
+    name: 附件说明格式
+    severity: error
+    checker: attachment
+    params:
+      indent_chars: 2          # 左空两字
+      blank_lines_before: 1    # 正文下空一行
+      forbid_trailing_punct: true
+
+  - id: signature-layout
+    name: 落款与成文日期
+    severity: error
+    checker: signature
+    params:
+      date_format: chinese     # 成文日期用阿拉伯数字全称：2026年9月18日
+      blank_lines_before: 2    # 署名一般在正文或附件说明下空二行
+      seal_expected: false     # 是否要求盖章（印章位置检查需 VLM，接口预留）

@@ -1,0 +1,355 @@
+{
+  "file": "samples/违规示例-呈报稿大字版.docx",
+  "doc_type": "chengbaogao_dazi",
+  "ruleset_name": "呈报稿（大字版）",
+  "rule_results": [
+    {
+      "rule_id": "page-number",
+      "name": "页码格式",
+      "status": "发现问题",
+      "count": 2
+    },
+    {
+      "rule_id": "heading-number",
+      "name": "标题序号",
+      "status": "发现问题",
+      "count": 1
+    },
+    {
+      "rule_id": "attachment-format",
+      "name": "附件说明格式",
+      "status": "发现问题",
+      "count": 1
+    },
+    {
+      "rule_id": "signature-layout",
+      "name": "落款与成文日期",
+      "status": "发现问题",
+      "count": 1
+    },
+    {
+      "rule_id": "page-setup",
+      "name": "页面设置",
+      "status": "发现问题",
+      "count": 1
+    },
+    {
+      "rule_id": "font-title",
+      "name": "标题字体字号",
+      "status": "通过",
+      "count": 0
+    },
+    {
+      "rule_id": "font-body",
+      "name": "正文字体字号",
+      "status": "发现问题",
+      "count": 4
+    },
+    {
+      "rule_id": "font-heading-1",
+      "name": "一级标题字体字号",
+      "status": "通过",
+      "count": 0
+    },
+    {
+      "rule_id": "font-heading-2",
+      "name": "二级标题字体字号",
+      "status": "通过",
+      "count": 0
+    },
+    {
+      "rule_id": "line-spacing",
+      "name": "行距",
+      "status": "发现问题",
+      "count": 12
+    },
+    {
+      "rule_id": "char-spacing",
+      "name": "字符间距",
+      "status": "通过",
+      "count": 0
+    },
+    {
+      "rule_id": "secrecy-format",
+      "name": "秘级格式",
+      "status": "发现问题",
+      "count": 1
+    }
+  ],
+  "findings": [
+    {
+      "location": "页脚",
+      "message": "页码格式不符合要求",
+      "expected": "「— 1 —」",
+      "actual": "「- 1 -」",
+      "suggestion": "页码两侧使用一字线「—」，不要用短横线",
+      "rule_id": "page-number",
+      "rule_name": "页码格式",
+      "severity": "error"
+    },
+    {
+      "location": "页脚",
+      "message": "页码未左右居中",
+      "expected": "居中",
+      "actual": "RIGHT",
+      "suggestion": "页脚段落设为居中",
+      "rule_id": "page-number",
+      "rule_name": "页码格式",
+      "severity": "error"
+    },
+    {
+      "location": "第3段「1、工作开展情况」",
+      "message": "1级标题编号形式不符合要求",
+      "expected": "形如「一、」",
+      "actual": "「1、工作开展」",
+      "suggestion": "1级标题编号应使用「一、」形式",
+      "rule_id": "heading-number",
+      "rule_name": "标题序号",
+      "severity": "error"
+    },
+    {
+      "location": "第12段「附件：1.XX专项工作实施方…」",
+      "message": "附件名称后不应加标点符号",
+      "expected": "无结尾标点",
+      "actual": "结尾为「；」",
+      "suggestion": "删除附件名称末尾的标点",
+      "rule_id": "attachment-format",
+      "rule_name": "附件说明格式",
+      "severity": "error"
+    },
+    {
+      "location": "第16段「2026.9.18」",
+      "message": "成文日期写法不符合要求",
+      "expected": "阿拉伯数字全称，如「2026年9月18日」",
+      "actual": "「2026.9.18」",
+      "suggestion": "改为「YYYY年M月D日」，不要用点号或短横分隔",
+      "rule_id": "signature-layout",
+      "rule_name": "落款与成文日期",
+      "severity": "error"
+    },
+    {
+      "location": "页面设置",
+      "message": "左边距不符合要求",
+      "expected": "2.7 cm",
+      "actual": "3.17 cm",
+      "suggestion": "页面布局 → 页边距 → 将左边距设为 2.7 厘米",
+      "rule_id": "page-setup",
+      "rule_name": "页面设置",
+      "severity": "error"
+    },
+    {
+      "location": "第4段「今年以来，我室按照委机关统一…」",
+      "message": "「body」中文字体不符合要求",
+      "expected": "方正仿宋_GBK",
+      "actual": "宋体",
+      "suggestion": "将中文字体调整为：方正仿宋_GBK",
+      "rule_id": "font-body",
+      "rule_name": "正文字体字号",
+      "severity": "error"
+    },
+    {
+      "location": "第6段「成立专项工作专班，明确责任分…」",
+      "message": "「body」中文字体不符合要求",
+      "expected": "方正仿宋_GBK",
+      "actual": "宋体",
+      "suggestion": "将中文字体调整为：方正仿宋_GBK",
+      "rule_id": "font-body",
+      "rule_name": "正文字体字号",
+      "severity": "error"
+    },
+    {
+      "location": "第8段「建立周调度、月通报工作机制，…」",
+      "message": "「body」中文字体不符合要求",
+      "expected": "方正仿宋_GBK",
+      "actual": "宋体",
+      "suggestion": "将中文字体调整为：方正仿宋_GBK",
+      "rule_id": "font-body",
+      "rule_name": "正文字体字号",
+      "severity": "error"
+    },
+    {
+      "location": "第10段「持续深化专项治理，强化跟踪问…」",
+      "message": "「body」中文字体不符合要求",
+      "expected": "方正仿宋_GBK",
+      "actual": "宋体",
+      "suggestion": "将中文字体调整为：方正仿宋_GBK",
+      "rule_id": "font-body",
+      "rule_name": "正文字体字号",
+      "severity": "error"
+    },
+    {
+      "location": "第2段「关于XX专项工作进展情况的报…」",
+      "message": "「title」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第4段「今年以来，我室按照委机关统一…」",
+      "message": "「body」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第6段「成立专项工作专班，明确责任分…」",
+      "message": "「body」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第8段「建立周调度、月通报工作机制，…」",
+      "message": "「body」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第10段「持续深化专项治理，强化跟踪问…」",
+      "message": "「body」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第9段「二、下一步工作安排」",
+      "message": "「heading1」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第3段「1、工作开展情况」",
+      "message": "「heading1」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第5段「（一）加强组织领导」",
+      "message": "「heading2」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第7段「1.健全工作机制」",
+      "message": "「heading3」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第12段「附件：1.XX专项工作实施方…」",
+      "message": "「attachment」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第15段「泰州市纪委监委XX室」",
+      "message": "「signature」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第16段「2026.9.18」",
+      "message": "「date」行距不符合要求",
+      "expected": "固定值 32 磅",
+      "actual": "固定值 28.0 磅",
+      "suggestion": "段落 → 行距 → 固定值，设置 32 磅",
+      "rule_id": "line-spacing",
+      "rule_name": "行距",
+      "severity": "error"
+    },
+    {
+      "location": "第1段「秘 密」",
+      "message": "秘级应加粗",
+      "expected": "加粗",
+      "actual": "未加粗",
+      "suggestion": "",
+      "rule_id": "secrecy-format",
+      "rule_name": "秘级格式",
+      "severity": "error"
+    }
+  ],
+  "roles": {
+    "secrecy": [
+      0
+    ],
+    "title": [
+      1
+    ],
+    "date": [
+      15
+    ],
+    "signature": [
+      14
+    ],
+    "heading2": [
+      4
+    ],
+    "heading3": [
+      6
+    ],
+    "heading1": [
+      8,
+      2
+    ],
+    "attachment": [
+      11
+    ],
+    "body": [
+      3,
+      5,
+      7,
+      9
+    ],
+    "blank": [
+      10,
+      12,
+      13
+    ]
+  },
+  "created_at": "2026-09-26 02:25:28",
+  "counts": {
+    "error": 23,
+    "warning": 0,
+    "info": 0
+  }
+}
