@@ -137,7 +137,7 @@ def build_doc(cfg: dict, out_path: str, content: dict | None = None,
               mutations: list[str] | None = None) -> list[str]:
     """按配置生成一份文档。cfg 由 synth.golden.build_cfg 从规则 YAML 推导；
     mutations 为变异名列表（见 synth.mutations）。"""
-    from .synth.mutations import apply_mutations
+    from .mutations import apply_mutations
 
     cfg = copy.deepcopy(cfg)
     content = copy.deepcopy(content or DEFAULT_CONTENT)

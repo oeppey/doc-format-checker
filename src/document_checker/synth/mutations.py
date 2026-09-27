@@ -17,7 +17,7 @@ def _m_body_size(cfg, content):
     cfg["body"]["size"] -= 2
 
 def _m_heading_bold(cfg, content):
-    cfg["h1"]["bold"] = False
+    cfg["h1"]["bold"] = not cfg["h1"]["bold"]
 
 def _m_margin(cfg, content):
     cfg["margins"]["left"] = 3.17
@@ -26,7 +26,7 @@ def _m_spacing(cfg, content):
     cfg["line_pt"] = 28.0
 
 def _m_char_spacing(cfg, content):
-    cfg["char_spacing_pt"] = 0.0
+    cfg["char_spacing_pt"] = 0.0 if cfg["char_spacing_pt"] else 0.4
 
 def _m_page_number(cfg, content):
     cfg["page_num"]["dash"] = "-"
@@ -53,10 +53,10 @@ MUTATIONS = {
     "title_font":       {"desc": "标题字体错（→宋体）",        "fn": _m_title_font,       "expected": ["font-title"]},
     "body_font":        {"desc": "正文字体错（→宋体）",        "fn": _m_body_font,        "expected": ["font-body"]},
     "body_size":        {"desc": "正文字号错（小两号）",       "fn": _m_body_size,        "expected": ["font-body"]},
-    "heading_bold":     {"desc": "一级标题未加粗",             "fn": _m_heading_bold,     "expected": ["font-heading-1"]},
+    "heading_bold":     {"desc": "一级标题加粗状态错误",             "fn": _m_heading_bold,     "expected": ["font-heading-1"]},
     "margin":           {"desc": "左边距错（2.7→3.17cm）",     "fn": _m_margin,           "expected": ["page-setup"]},
     "spacing":          {"desc": "行距错（→28磅）",            "fn": _m_spacing,          "expected": ["line-spacing"]},
-    "char_spacing":     {"desc": "字符间距错（→标准）",        "fn": _m_char_spacing,     "expected": ["char-spacing"]},
+    "char_spacing":     {"desc": "字符间距错（标准／加宽互换）",        "fn": _m_char_spacing,     "expected": ["char-spacing"]},
     "page_number":      {"desc": "页码格式错（- 1 - 且未居中）","fn": _m_page_number,      "expected": ["page-number"]},
     "heading_num":      {"desc": "一级标题序号错（一、→1、）", "fn": _m_heading_num,      "expected": ["heading-number"]},
     "attachment_punct": {"desc": "附件名称后多标点",           "fn": _m_attachment_punct, "expected": ["attachment-format"]},

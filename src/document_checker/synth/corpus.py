@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 
-from ..sample_gen import DEFAULT_CONTENT, build_doc
+from .sample_gen import DEFAULT_CONTENT, build_doc
 from .golden import build_cfg, resolve_doc_type
 from .mutations import MUTATIONS
 

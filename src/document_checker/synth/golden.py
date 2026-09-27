@@ -2,7 +2,7 @@
 """Golden Document 生成：从规则 YAML 推导生成参数（单一事实源）。
 
 规则 YAML 是唯一需要维护的地方——例如标题字号从"小一"改成"二号"，
-只改 rules/呈报稿-大字版.yaml 里的 size_pt，重新生成语料即可，
+只改 src/document_checker/rules/呈报稿-大字版.yaml 里的 size_pt，重新生成语料即可，
 生成器参数不需要任何手工同步。
 """
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 
 from ..rule_engine import RuleEngine
-from ..sample_gen import BASE_CONFIG
+from .sample_gen import BASE_CONFIG
 
 _TYPE_ALIAS = {"dazi": "chengbaogao_dazi", "xiaozi": "chengbaogao_xiaozi"}
 

@@ -6,15 +6,22 @@
 
 ## 快速开始
 
-```bash
-pip install -r requirements.txt
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\Activate.ps1
 
-# 生成合成样本（甲方不提供真实公文，数据全部自造）
-python main.py generate --type dazi --out samples/合规-呈报稿大字版.docx
-python main.py generate --type dazi --out samples/违规示例.docx --violate body_font,line_spacing
+# 需要本地 ELECTRA 时再安装
+.\.venv\Scripts\python -m pip install -e ".[detector]"
+# 已有模型网关权限时再安装
+.\.venv\Scripts\python -m pip install -e ".[gateway]"
+
+# 生成合成样本
+document-checker generate --type dazi --out samples/合规-呈报稿大字版.docx
+document-checker generate --type dazi --out samples/违规示例.docx --violate body_font,line_spacing
 
 # 检查（文书类型按标题字号自动识别，也可 --type 强制指定）
-python main.py check samples/违规示例.docx --report 报告.md --json 报告.json
+document-checker check samples/违规示例.docx --report 报告.md --json 报告.json
 ```
 
 已注入 10 类违规的演示样本见 `samples/`，对应报告见 `samples/检查报告-违规示例.md`。
@@ -39,7 +46,7 @@ rules:
   - id: font-body            # 规则 id：common.yaml 同名 id 会被本文件覆盖（params 合并）
     name: 正文字体字号
     severity: error          # error / warning / info
-    checker: font_format     # 对应 src/checkers/ 里 @register("font_format")
+    checker: font_format     # 对应 src/document_checker/checkers/ 里 @register("font_format")
     params:
       role: body             # 作用于哪个段落角色
       fonts: [方正仿宋_GBK, 方正仿宋GBK, 方正仿宋简体]   # 别名列表，归一化后匹配
@@ -71,19 +78,19 @@ rules:
 规则 YAML → 生成 Golden Document → 逐案例注入单点违规 → Checker → Gold 标注 → pytest
 ```
 
-- **单一事实源**：`src/synth/golden.py` 从规则 YAML 直接推导生成参数
+- **单一事实源**：`src/document_checker/synth/golden.py` 从规则 YAML 直接推导生成参数
   （字体/字号/加粗/边距/行距/字符间距/秘级/页码全部来自规则本身）。
   **需求变更 = 只改 YAML**，然后 `pytest` 重新生成并断言，生成器参数零手工同步。
-- **变异注册表** `src/synth/mutations.py`：12 个案例，每个案例 = 单点违规 +
+- **变异注册表** `src/document_checker/synth/mutations.py`：12 个案例，每个案例 = 单点违规 +
   `expected_findings`（期望命中的规则 id，即 Gold 标注）。
-- **批量产出** `src/synth/corpus.py` / `python main.py synth --type dazi --outdir tests/corpus/dazi`：
+- **批量产出** `src/document_checker/synth/corpus.py` / `document-checker synth --type dazi --outdir tests/corpus/dazi`：
   一份 `golden.docx` + 每案例一份 `wrong_<case_id>.docx` + `gold.json`。
 - **pytest 闭环** `tests/test_synthetic.py`：
   golden 零 error（不许误报）；每个 wrong_* 期望规则 ⊆ 实际命中（不许漏报）；
   另有错字注入检测用例（启发式后端，不依赖模型/LLM，CI 可跑）。
 
 ```bash
-python main.py synth --type dazi --outdir tests/corpus/dazi   # 生成语料
+document-checker synth --type dazi --outdir tests/corpus/dazi   # 生成语料
 python -m pytest tests/ -q                                    # 回归断言
 ```
 
@@ -99,7 +106,7 @@ pytest 依旧全绿（Golden 自动按新参数生成）。
 《土壤污染防治基金管理办法》等），脚本抽取内容后按目标格式重排：
 
 ```bash
-python main.py import samples/public_raw/服务业发展资金管理办法.docx \
+document-checker import samples/public_raw/服务业发展资金管理办法.docx \
     --type dazi --out samples/imported/服务业发展资金管理办法-大字版.docx
 ```
 
@@ -113,13 +120,13 @@ heading_num, attachment_punct, date_format, secrecy_bold`（旧名
 `margin_left/line_spacing` 仍兼容）。
 
 合规样本（含导入重排件）应零误报，注入的每类违规应全部命中。
-**每次改规则或检查器后，`pytest tests/` 即完成回归。**
+**每次改规则或检查器后，`python -m pytest tests/` 即完成回归。**
 
 ## 错别字检查（初版）
 
 ```bash
-python main.py typo 文件.docx [--threshold 0.9] [--report 报告.md] [--no-llm]
-python main.py inject 样本.docx --out 错字样本.docx [--pairs 部署,补贴]   # 造测试数据
+document-checker typo 文件.docx [--threshold 0.9] [--report 报告.md] [--no-llm]
+document-checker inject 样本.docx --out 错字样本.docx [--pairs 部署,补贴]   # 造测试数据
 ```
 
 链路（与技术方案一致）：
@@ -133,7 +140,7 @@ python main.py inject 样本.docx --out 错字样本.docx [--pairs 部署,补贴
   下载：`huggingface_hub.snapshot_download("xurong123/ChineseErrorDetectorElectra",
   local_dir="models/ced", allow_patterns=[config.json, model.safetensors, tokenizer*, vocab.txt, special_tokens_map.json])`，
   用 `CED_MODEL_DIR` 环境变量指到目录即可。模型不可用时自动退回"混淆词典+叠字"启发式检测器。
-- **精检**：`src/typo/corrector.py` 走 agent-gw（OpenAI 兼容 chat），`--model` 指定型号；
+- **精检**：`src/document_checker/typo/corrector.py` 走 agent-gw（OpenAI 兼容 chat），`--model` 指定型号；
   三重校验：原文必须逐字在句中、改动字数差≤1、保护词表（定金/不起诉等）禁改。
   凭证无权限或不可用时自动退回启发式纠错，链路不断。
 - **阈值**：默认 0.5，实测公文语料建议 0.9 左右（注入错字概率均 ≥0.99；
@@ -153,15 +160,23 @@ python main.py inject 样本.docx --out 错字样本.docx [--pairs 部署,补贴
 
 ## 目录
 
+```text
+├── pyproject.toml           # 基础依赖、可选模型依赖、开发依赖、CLI 入口
+├── main.py                  # 旧命令兼容入口（需先安装项目）
+├── src/document_checker/
+│   ├── cli.py               # check / generate / synth / import / typo / inject
+│   ├── docx_parser.py       # DOCX → 文档 IR
+│   ├── role_mapper.py       # 语义角色映射
+│   ├── rule_engine.py       # YAML 加载与检查调度
+│   ├── report.py            # 格式检查报告
+│   ├── checkers/            # 格式检查器
+│   ├── typo/                # 错别字流水线与模型适配
+│   ├── synth/               # 样本生成、内容导入与违规注入
+│   └── rules/               # 随包发布的默认 YAML 规则；--rules 可指定外部目录
+├── tests/
+├── docs/
+└── samples/
 ```
-├── main.py               # CLI：check / generate
-├── rules/                # YAML 规则（common + 大字版 + 小字版）
-├── src/
-│   ├── docx_parser.py    # 解析层
-│   ├── role_mapper.py    # 角色映射（LLM 接口预留）
-│   ├── rule_engine.py    # 规则引擎
-│   ├── report.py         # 报告
-│   ├── sample_gen.py     # 合成数据生成器
-│   └── checkers/         # 检查器（注册表式）
-└── samples/              # 生成的样本与示例报告
-```
+
+基础安装只包含 DOCX 解析和 YAML。`detector` 与 `gateway` 是独立可选依赖；
+没有模型时错别字命令仍可使用启发式后端，报告会显示实际后端。
