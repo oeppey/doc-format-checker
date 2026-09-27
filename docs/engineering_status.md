@@ -68,7 +68,8 @@ doc-format-checker/
 │   └── imported/                     # 按本项目规则重排的 DOCX
 └── docs/
     ├── format_rules.md               # 照片规则的需求侧记录
-    └── engineering_status.md         # 本文件
+    ├── engineering_status.md         # 本文件
+    └── format_requirements_audit.md  # 三张原图逐条实现审计
 ```
 
 ### 代码数据流
@@ -81,6 +82,8 @@ DOCX
 ```
 
 `DocModel` 当前含正文段落、节页面参数、普通页脚段落和行内图片计数。表格正文、页眉、奇偶页不同页脚、真实分页及完整样式继承尚未进入稳定 IR。
+
+三张原图的每个格式子要求、检测方法与实现状态见 [格式要求审计](format_requirements_audit.md)。
 
 ## 4. 已实现能力及证据
 

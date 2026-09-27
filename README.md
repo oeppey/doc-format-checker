@@ -4,7 +4,7 @@
 当前目标：**跑通"规则配置 → 解析 → 角色映射 → 检查 → 报告"全链路，验证技术路线可行**；
 精度与规则覆盖后续迭代。
 
-当前工程状态、验证证据、风险和后续工作见 [工程状态与后续工作](docs/engineering_status.md)；规则需求源头见 [格式规则](docs/format_rules.md)。
+当前工程状态、验证证据、风险和后续工作见 [工程状态与后续工作](docs/engineering_status.md)；规则需求源头见 [格式规则](docs/format_rules.md)；三张原图逐条实现情况见 [格式要求审计](docs/format_requirements_audit.md)。
 
 ## 快速开始
 
