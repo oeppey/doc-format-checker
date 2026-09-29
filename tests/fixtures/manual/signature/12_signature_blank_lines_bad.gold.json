@@ -1,0 +1,103 @@
+{
+  "file": "12_signature_blank_lines_bad.docx",
+  "doc_type": "dazi",
+  "purpose": "反例：署名与附件说明之间只空一行（应下空二行；warning 级）",
+  "annotated_by": "AI 起草（Kimi），待业务人工复核",
+  "annotated_at": "2026-09-27",
+  "annotation_method": "生成后核对 OOXML（document.xml）确认署名前仅一个空段",
+  "role_labels": [
+    {
+      "location": "body/p1",
+      "role": "secrecy"
+    },
+    {
+      "location": "body/p2",
+      "role": "title"
+    },
+    {
+      "location": "body/p3",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p4",
+      "role": "body"
+    },
+    {
+      "location": "body/p5",
+      "role": "heading2"
+    },
+    {
+      "location": "body/p6",
+      "role": "body"
+    },
+    {
+      "location": "body/p7",
+      "role": "heading3"
+    },
+    {
+      "location": "body/p8",
+      "role": "body"
+    },
+    {
+      "location": "body/p9",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p10",
+      "role": "body"
+    },
+    {
+      "location": "body/p12",
+      "role": "attachment"
+    },
+    {
+      "location": "body/p14",
+      "role": "signature"
+    },
+    {
+      "location": "body/p15",
+      "role": "date"
+    }
+  ],
+  "expected_findings": [
+    {
+      "rule_id": "signature-layout",
+      "severity": "warning",
+      "paragraph": 14,
+      "message_contains": "空行数",
+      "expected_contains": "下空 2 行",
+      "actual_contains": "空 1 行"
+    }
+  ],
+  "parse_expectations": [
+    {
+      "location": "body/p12",
+      "property": "text_prefix",
+      "value": "　　附件："
+    },
+    {
+      "location": "body/p13",
+      "property": "is_blank",
+      "value": true
+    },
+    {
+      "location": "body/p14",
+      "property": "text",
+      "value": "泰州市纪委监委XX室"
+    },
+    {
+      "location": "body/p13",
+      "property": "line_pt",
+      "value": 32.0
+    },
+    {
+      "location": "body/p13",
+      "property": "line_rule",
+      "value": "exact"
+    }
+  ],
+  "parse_known_gaps": [],
+  "basis": "内部《常用公文格式》落款照片要求署名前“下空二行”；GB/T 9704-2012 7.3.5.2 对不盖章单一机关公文写“下空一行”，需区分适用场景。",
+  "working_assumption": "以署名前两个空 Word 段且每段固定行距为正文的 32 磅作代理；本样本仅有一个空段，暂报 warning。",
+  "business_confirmation": "确认内部二行要求适用哪些盖章/不盖章文书，是否接受空段与 32 磅行距代理，及 warning 级别。"
+}

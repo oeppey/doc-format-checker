@@ -44,12 +44,13 @@ def map_roles(model: DocModel):
     if not non_empty:
         return roles, para_role
 
-    # 1) 秘级：仅认文档首个非空段
-    first = paras[non_empty[0]]
-    if SECRECY_RE.match(first.text.strip()):
-        add("secrecy", first.index)
+    # 1) 密级候选：先识别全文，再由 checker 检查是否放在首页左上角。
+    #    只识别首段会让“密级写错位置”被当作普通正文而静默漏检。
+    for i in non_empty:
+        if SECRECY_RE.match(paras[i].text.strip()):
+            add("secrecy", i)
 
-    # 2) 标题：秘级之后的首个非空段
+    # 2) 标题：秘级之外的首个非空段
     for i in non_empty:
         if i not in para_role:
             add("title", i)

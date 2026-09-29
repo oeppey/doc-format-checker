@@ -27,12 +27,17 @@ TYPE_ALIAS = {"dazi": "chengbaogao_dazi", "xiaozi": "chengbaogao_xiaozi"}
 
 
 def cmd_check(args):
-    engine = RuleEngine(args.rules)
-    doc_type = TYPE_ALIAS.get(args.type, args.type) if args.type else None
-    report = engine.check(args.docx, doc_type)
+    try:
+        engine = RuleEngine(args.rules)
+        doc_type = TYPE_ALIAS.get(args.type, args.type) if args.type else None
+        report = engine.check(args.docx, doc_type)
+    except (ValueError, KeyError, OSError, RuntimeError) as exc:
+        print(f"检查无法完成：{exc}", file=sys.stderr)
+        return 2
     counts = report.counts()
     print(f"文件：{report.file}")
     print(f"适用规则集：{report.ruleset_name}（{report.doc_type}）")
+    print(f"检查状态：{report.status}")
     print(f"规则：共 {len(report.rule_results)} 条；问题：错误 {counts['error']}，"
           f"警告 {counts['warning']}，提示 {counts['info']}")
     for f in report.findings:
@@ -48,6 +53,8 @@ def cmd_check(args):
         with open(args.json, "w", encoding="utf-8") as fp:
             json.dump(report.to_dict(), fp, ensure_ascii=False, indent=2)
         print(f"JSON 报告：{args.json}")
+    if report.status in ("未检查", "运行失败"):
+        return 2
     return 1 if counts["error"] else 0
 
 
@@ -101,12 +108,20 @@ def cmd_import(args):
 
 
 def cmd_typo(args):
-    report = run_typo_check(args.docx, threshold=args.threshold,
-                            use_llm=not args.no_llm, llm_model=args.model)
+    try:
+        report = run_typo_check(
+            args.docx, threshold=args.threshold, use_llm=not args.no_llm,
+            llm_model=args.model, detector_model_dir=args.detector_model_dir,
+            detector_device=args.device, corrector_base_url=args.corrector_url,
+            corrector_protocol=args.corrector_protocol, require_models=args.require_models)
+    except (ValueError, KeyError, OSError, RuntimeError) as exc:
+        print(f"错字检查无法完成：{exc}", file=sys.stderr)
+        return 2
     print(f"文件：{report.file}")
+    print(f"状态：{report.status}")
     print(f"检测器：{report.detector_name}；精检：{report.corrector_name}")
     print(f"句子 {report.total_sentences}，过滤 {report.skipped}，"
-          f"嫌疑 {report.suspect}，确认 {len(report.findings)} 处")
+          f"嫌疑 {report.suspect}，确认 {len(report.findings)} 处，失败 {report.failed_sentences} 句")
     for f in report.findings:
         print(f"  [{f.location}] 「{f.original}」→「{f.suggestion}」 {f.reason}"
               f"（嫌疑分 {f.score:.2f}）")
@@ -115,7 +130,14 @@ def cmd_typo(args):
         with open(args.report, "w", encoding="utf-8") as fp:
             fp.write(report.render_markdown())
         print(f"Markdown 报告：{args.report}")
-    return 0
+    if args.json:
+        os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
+        with open(args.json, "w", encoding="utf-8") as fp:
+            json.dump(report.to_dict(), fp, ensure_ascii=False, indent=2)
+        print(f"JSON 报告：{args.json}")
+    if report.status in ("未检查", "运行失败"):
+        return 2
+    return 1 if report.findings else 0
 
 
 def cmd_inject(args):
@@ -164,8 +186,16 @@ def main():
     t.add_argument("docx")
     t.add_argument("--threshold", type=float, default=0.5, help="ELECTRA 字级嫌疑阈值")
     t.add_argument("--no-llm", action="store_true", help="不调用大模型精检（启发式兜底）")
-    t.add_argument("--model", help="LLM 型号（缺省自动选择）")
+    t.add_argument("--model", help="LLM 型号（或设置 DOCUMENT_CHECKER_CORRECTOR_MODEL）")
+    t.add_argument("--detector-model-dir", help="ELECTRA 本地模型目录（或设置 CED_MODEL_DIR）")
+    t.add_argument("--device", default="auto", help="ELECTRA 设备：auto、cpu 或 cuda")
+    t.add_argument("--corrector-url", help="4B/27B OpenAI 兼容服务地址，包含 /v1")
+    t.add_argument("--corrector-protocol", choices=["corrected_text", "json"],
+                   help="精检响应格式；4B 默认 corrected_text，其他模型默认 json")
+    t.add_argument("--require-models", action="store_true",
+                   help="要求真实 ELECTRA 和精检服务；不可用时失败，不启用词表回退")
     t.add_argument("--report", help="Markdown 报告输出路径")
+    t.add_argument("--json", help="JSON 报告输出路径")
     t.set_defaults(fn=cmd_typo)
 
     j = sub.add_parser("inject", help="往 docx 里注入错字（造测试数据）")

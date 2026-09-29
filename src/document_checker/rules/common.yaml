@@ -18,6 +18,10 @@ rules:
       footer_distance_cm: 1.75
       tolerance_cm: 0.1
 
+  # 国标原文转载（中国矿业大学党政办）：https://dzb.cumtb.edu.cn/info/1040/1184.htm
+  # Q1 依据：GB/T 9704-2012 7.3.3 的结构层次序数为“一、”“（一）”“1.”“（1）”。
+  # 假设：10 号样本的“1、”承担结构标题序数；暂按 error 报疑似层级错误。
+  # 待确认：业务判定该段的真实角色、适用文书范围及 error/warning 级别；国标未禁止所有正文“1、”列举。
   - id: heading-number
     name: 标题序号
     severity: error
@@ -33,11 +37,17 @@ rules:
       blank_lines_before: 1    # 正文下空一行
       forbid_trailing_punct: true
 
+  # Q3 依据：GB/T 9704-2012 7.3.5.4 要求阿拉伯数字标全年月日，月日不编虚位。
+  # 假设：本项目的成文日期按 YYYY年M月D日 严格校验，日期错误维持 error。
+  # 待确认：业务内部是否对日期写法另有放宽及适用文书范围。
+  # Q4 依据：内部《常用公文格式》落款照片要求署名前“下空二行”。
+  # 假设：以署名前两个空 Word 段、各段固定行距等于正文行距为代理；具体磅值由文书类型覆盖。
+  # 待确认：业务是否认可空段代理及不同盖章情形；GB/T 9704-2012 7.3.5.2 对不盖章单一机关公文写“下空一行”。
   - id: signature-layout
     name: 落款与成文日期
     severity: error
     checker: signature
     params:
-      date_format: chinese     # 成文日期用阿拉伯数字全称：2026年9月18日
-      blank_lines_before: 2    # 署名一般在正文或附件说明下空二行
+      date_format: chinese     # 2026年9月18日；不接受 2026年09月18日
+      blank_lines_before: 2    # 署名前两个空 Word 段；只用于内部规则的暂定代理
       seal_expected: false     # 是否要求盖章（印章位置检查需 VLM，接口预留）

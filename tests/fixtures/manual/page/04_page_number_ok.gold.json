@@ -1,0 +1,87 @@
+{
+  "file": "04_page_number_ok.docx",
+  "doc_type": "dazi",
+  "purpose": "正例：页脚「— 1 —」居中、宋体四号、自动 PAGE 域、页脚底端距离 1.75cm",
+  "annotated_by": "AI 起草（Kimi），待业务人工复核",
+  "annotated_at": "2026-09-27",
+  "annotation_method": "生成后核对 OOXML（footer1.xml）确认 PAGE 域与字体",
+  "role_labels": [
+    {
+      "location": "body/p1",
+      "role": "secrecy"
+    },
+    {
+      "location": "body/p2",
+      "role": "title"
+    },
+    {
+      "location": "body/p3",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p4",
+      "role": "body"
+    },
+    {
+      "location": "body/p5",
+      "role": "heading2"
+    },
+    {
+      "location": "body/p6",
+      "role": "body"
+    },
+    {
+      "location": "body/p7",
+      "role": "heading3"
+    },
+    {
+      "location": "body/p8",
+      "role": "body"
+    },
+    {
+      "location": "body/p9",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p10",
+      "role": "body"
+    },
+    {
+      "location": "body/p12",
+      "role": "attachment"
+    },
+    {
+      "location": "body/p15",
+      "role": "signature"
+    },
+    {
+      "location": "body/p16",
+      "role": "date"
+    }
+  ],
+  "parse_expectations": [
+    {
+      "location": "footer/default/p1",
+      "property": "text",
+      "value": "— 1 —"
+    },
+    {
+      "location": "footer/default/p1",
+      "property": "has_page_field",
+      "value": true
+    },
+    {
+      "location": "footer/default/p1",
+      "property": "alignment",
+      "value": "CENTER"
+    },
+    {
+      "location": "sections/1",
+      "property": "footer_distance_cm",
+      "value": 1.75,
+      "tolerance": 0.01
+    }
+  ],
+  "expected_findings": [],
+  "shared_baseline_id": "dazi_golden"
+}

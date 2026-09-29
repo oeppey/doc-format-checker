@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""嫌疑句检测（粗筛）。
-
-主路径：ChineseErrorDetectorElectra（字级 token 分类，输出每个字为错别字的概率）。
-兜底：混淆词典 + 叠字规则的启发式检测器（模型不可用时保证链路能跑通）。
-
-统一接口 detect(list[str]) -> list[SuspectResult|None]
-"""
+"""Adapters for sentence-level typo suspicion."""
 from __future__ import annotations
 
 import os
@@ -14,14 +8,14 @@ from dataclasses import dataclass, field
 
 from .confusion import WRONG2RIGHT
 
+
 def _default_model_dir() -> str:
-    """候选路径：环境变量 > /tmp（会话内）> /mnt/agents（受 100MB 单文件限制可能不完整）。"""
     if os.environ.get("CED_MODEL_DIR"):
         return os.environ["CED_MODEL_DIR"]
-    for d in ("/tmp/models/ChineseErrorDetectorElectra",
-              "/mnt/agents/models/ChineseErrorDetectorElectra"):
-        if os.path.isfile(os.path.join(d, "model.safetensors")):
-            return d
+    for directory in ("/tmp/models/ChineseErrorDetectorElectra",
+                      "/mnt/agents/models/ChineseErrorDetectorElectra"):
+        if os.path.isfile(os.path.join(directory, "model.safetensors")):
+            return directory
     return "/tmp/models/ChineseErrorDetectorElectra"
 
 
@@ -30,82 +24,116 @@ DEFAULT_MODEL_DIR = _default_model_dir()
 
 @dataclass
 class SuspectResult:
-    score: float                      # 句级嫌疑分（字级最大概率）
-    suspect_chars: list[tuple[int, str, float]] = field(default_factory=list)  # (位置, 字, 概率)
-    hits: list[tuple[str, str]] = field(default_factory=list)  # 启发式命中 (错, 对)
+    score: float
+    suspect_chars: list[tuple[int, str, float]] = field(default_factory=list)
+    hits: list[tuple[str, str]] = field(default_factory=list)
+
+
+def error_label_index(id2label: dict) -> int:
+    matches = [
+        int(index) for index, label in id2label.items()
+        if str(label).strip().lower() in {"err", "error", "typo", "incorrect", "错", "错误"}
+    ]
+    if len(matches) != 1:
+        raise ValueError(f"ELECTRA 错误标签无法唯一确定：{id2label}")
+    return matches[0]
 
 
 class ElectraDetector:
-    def __init__(self, model_dir: str = DEFAULT_MODEL_DIR, threshold: float = 0.5):
+    def __init__(self, model_dir: str = DEFAULT_MODEL_DIR, threshold: float = 0.5,
+                 device: str = "auto", batch_size: int = 8, max_tokens: int = 512):
+        if not 0 <= threshold <= 1 or batch_size < 1 or max_tokens < 1:
+            raise ValueError("阈值、批量大小或 token 上限无效")
         import torch
         from transformers import AutoModelForTokenClassification, AutoTokenizer
         self.torch = torch
         self.threshold = threshold
-        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.batch_size = batch_size
+        self.max_tokens = max_tokens
+        self.device = "cuda" if device == "auto" and torch.cuda.is_available() else ("cpu" if device == "auto" else device)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
+        if not self.tokenizer.is_fast:
+            raise ValueError("ELECTRA 需要 fast tokenizer 才能可靠返回字符偏移")
         self.model = AutoModelForTokenClassification.from_pretrained(model_dir)
+        self.error_index = error_label_index(self.model.config.id2label)
+        self.model.to(self.device)
         self.model.eval()
+        self.last_truncated: list[int] = []
 
     def detect(self, sentences: list[str]) -> list[SuspectResult | None]:
-        if not sentences:
-            return []
-        torch = self.torch
-        enc = self.tokenizer(
-            sentences, return_tensors="pt", padding=True, truncation=True,
-            max_length=512, return_offsets_mapping=True)
-        with torch.no_grad():
-            logits = self.model(input_ids=enc["input_ids"],
-                                attention_mask=enc["attention_mask"]).logits
-        probs = torch.softmax(logits, dim=-1)[..., 1]  # label 1 = ERR
-        offsets = enc["offset_mapping"].tolist()
-        masks = enc["attention_mask"].tolist()
-        results = []
-        for si, sent in enumerate(sentences):
-            char_hits = []
-            for ti, (s, e) in enumerate(offsets[si]):
-                if not masks[si][ti] or s == e:
-                    continue
-                p = float(probs[si][ti])
-                if p >= self.threshold:
-                    char_hits.append((s, sent[s:e], round(p, 3)))
-            if char_hits:
-                results.append(SuspectResult(
-                    score=max(p for _, _, p in char_hits), suspect_chars=char_hits))
+        self.last_truncated = []
+        output: list[SuspectResult | None] = [None] * len(sentences)
+        valid = []
+        for index, sentence in enumerate(sentences):
+            length = len(self.tokenizer(sentence, add_special_tokens=True)["input_ids"])
+            if length > self.max_tokens:
+                self.last_truncated.append(index)
             else:
-                results.append(None)
-        return results
+                valid.append(index)
+        for start in range(0, len(valid), self.batch_size):
+            indices = valid[start:start + self.batch_size]
+            batch = [sentences[index] for index in indices]
+            enc = self.tokenizer(
+                batch, return_tensors="pt", padding=True, truncation=False,
+                return_offsets_mapping=True,
+            )
+            offsets = enc.pop("offset_mapping").tolist()
+            masks = enc["attention_mask"].tolist()
+            model_inputs = {key: value.to(self.device) for key, value in enc.items()}
+            with self.torch.no_grad():
+                logits = self.model(**model_inputs).logits
+            probs = self.torch.softmax(logits, dim=-1)[..., self.error_index].cpu()
+            for row, index in enumerate(indices):
+                hits = []
+                for token, (first, last) in enumerate(offsets[row]):
+                    if not masks[row][token] or first == last:
+                        continue
+                    score = float(probs[row][token])
+                    if score >= self.threshold:
+                        hits.append((first, sentences[index][first:last], round(score, 3)))
+                if hits:
+                    output[index] = SuspectResult(
+                        score=max(score for _, _, score in hits), suspect_chars=hits,
+                    )
+        return output
 
 
 class HeuristicDetector:
-    """兜底：查混淆词典 + 叠字。"""
+    """Small confusion dictionary for route verification, not model evaluation."""
 
-    DUP_ALLOW = set("刚天个渐常仅每各多渐步条层")  # 合法叠字常用首字（粗粒度）
+    DUP_ALLOW = set("刚天个渐常仅每各多渐步条层")
 
     def __init__(self, threshold: float = 0.5):
         self.threshold = threshold
 
     def detect(self, sentences: list[str]) -> list[SuspectResult | None]:
-        out = []
-        for sent in sentences:
-            hits = [(w, r) for w, r in WRONG2RIGHT.items() if w in sent]
+        output = []
+        for sentence in sentences:
+            hits = [(wrong, right) for wrong, right in WRONG2RIGHT.items() if wrong in sentence]
             chars = []
-            for m in re.finditer(r"(.)\1", sent):
-                if m.group(1) not in self.DUP_ALLOW and m.group(1) not in "，。、；：":
-                    chars.append((m.start(), m.group(1), 0.6))
+            for match in re.finditer(r"(.)\1", sentence):
+                if match.group(1) not in self.DUP_ALLOW and match.group(1) not in "，。、；：":
+                    chars.append((match.start(), match.group(1), 0.6))
             if hits or chars:
-                out.append(SuspectResult(
-                    score=max([0.9] * len(hits) + [p for _, _, p in chars]),
-                    suspect_chars=chars, hits=hits))
+                output.append(SuspectResult(
+                    score=max([0.9] * len(hits) + [score for _, _, score in chars]),
+                    suspect_chars=chars, hits=hits,
+                ))
             else:
-                out.append(None)
-        return out
+                output.append(None)
+        return output
 
 
-def get_detector(prefer: str = "electra", model_dir: str = DEFAULT_MODEL_DIR,
-                 threshold: float = 0.5):
-    """优先 ELECTRA；模型文件缺失或加载失败时退回启发式，并说明原因。"""
+def get_detector(prefer: str = "electra", model_dir: str | None = None,
+                 threshold: float = 0.5, device: str = "auto", strict: bool = False):
+    model_dir = model_dir or _default_model_dir()
     if prefer == "heuristic":
+        if strict:
+            raise ValueError("严格模型模式不允许启发式检测器")
         return HeuristicDetector(threshold), "heuristic（手动指定）"
     try:
-        return ElectraDetector(model_dir, threshold), f"electra @ {model_dir}"
-    except Exception as e:  # noqa: BLE001
-        return HeuristicDetector(threshold), f"heuristic（ELECTRA 不可用：{e}）"
+        return ElectraDetector(model_dir, threshold, device=device), f"electra @ {model_dir} ({device})"
+    except Exception as exc:
+        if strict:
+            raise RuntimeError(f"ELECTRA 初筛不可用：{exc}") from exc
+        return HeuristicDetector(threshold), f"heuristic（ELECTRA 不可用：{exc}）"

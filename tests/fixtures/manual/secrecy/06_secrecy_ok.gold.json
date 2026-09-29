@@ -1,0 +1,81 @@
+{
+  "file": "06_secrecy_ok.docx",
+  "doc_type": "dazi",
+  "purpose": "正例：秘级「秘 密」位于首个非空段、顶格居左、方正黑体_GBK 小二加粗、两字间空一格",
+  "annotated_by": "AI 起草（Kimi），待业务人工复核",
+  "annotated_at": "2026-09-27",
+  "annotation_method": "生成后核对 OOXML（document.xml）确认秘级段格式",
+  "role_labels": [
+    {
+      "location": "body/p1",
+      "role": "secrecy"
+    },
+    {
+      "location": "body/p2",
+      "role": "title"
+    },
+    {
+      "location": "body/p3",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p4",
+      "role": "body"
+    },
+    {
+      "location": "body/p5",
+      "role": "heading2"
+    },
+    {
+      "location": "body/p6",
+      "role": "body"
+    },
+    {
+      "location": "body/p7",
+      "role": "heading3"
+    },
+    {
+      "location": "body/p8",
+      "role": "body"
+    },
+    {
+      "location": "body/p9",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p10",
+      "role": "body"
+    },
+    {
+      "location": "body/p12",
+      "role": "attachment"
+    },
+    {
+      "location": "body/p15",
+      "role": "signature"
+    },
+    {
+      "location": "body/p16",
+      "role": "date"
+    }
+  ],
+  "parse_expectations": [
+    {
+      "location": "body/p1/run1",
+      "property": "font_ea",
+      "value": "方正黑体_GBK"
+    },
+    {
+      "location": "body/p1/run1",
+      "property": "size_pt",
+      "value": 18
+    },
+    {
+      "location": "body/p1/run1",
+      "property": "bold",
+      "value": true
+    }
+  ],
+  "expected_findings": [],
+  "shared_baseline_id": "dazi_golden"
+}

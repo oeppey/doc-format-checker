@@ -1,0 +1,93 @@
+{
+  "file": "10_heading_number_in_body_bad.docx",
+  "doc_type": "dazi",
+  "purpose": "反例候选：第11段以“1、”开头且使用正文仿宋；疑似结构层次编号，语义角色与错误级别待业务裁定。",
+  "annotated_by": "AI 起草（Kimi），待业务人工复核",
+  "annotated_at": "2026-09-27",
+  "annotation_method": "生成后核对 OOXML（document.xml）",
+  "role_labels": [
+    {
+      "location": "body/p1",
+      "role": "secrecy"
+    },
+    {
+      "location": "body/p2",
+      "role": "title"
+    },
+    {
+      "location": "body/p3",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p4",
+      "role": "body"
+    },
+    {
+      "location": "body/p5",
+      "role": "heading2"
+    },
+    {
+      "location": "body/p6",
+      "role": "body"
+    },
+    {
+      "location": "body/p7",
+      "role": "heading3"
+    },
+    {
+      "location": "body/p8",
+      "role": "body"
+    },
+    {
+      "location": "body/p9",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p10",
+      "role": "body"
+    },
+    {
+      "location": "body/p11",
+      "role": "body",
+      "note": "语义上疑似一级标题，但按正文排版（仿宋），人工按版式标 body；与 14 号样本（黑体、人工标 heading1）对照"
+    },
+    {
+      "location": "body/p13",
+      "role": "attachment"
+    },
+    {
+      "location": "body/p16",
+      "role": "signature"
+    },
+    {
+      "location": "body/p17",
+      "role": "date"
+    }
+  ],
+  "expected_findings": [
+    {
+      "rule_id": "heading-number",
+      "severity": "error",
+      "paragraph": 11,
+      "message_contains": "数字+顿号",
+      "expected_contains": "一、",
+      "actual_contains": "1、"
+    }
+  ],
+  "parse_expectations": [
+    {
+      "location": "body/p11",
+      "property": "text",
+      "value": "1、专项督导工作推进情况"
+    },
+    {
+      "location": "body/p11/run1",
+      "property": "font_ea",
+      "value": "方正仿宋_GBK"
+    }
+  ],
+  "parse_known_gaps": [],
+  "basis": "GB/T 9704-2012 7.3.3：文中结构层次序数依次可用“一、”“（一）”“1.”“（1）”；该条不直接禁止所有正文列举“1、”。",
+  "working_assumption": "本样本第11段的“1、”暂按疑似结构标题序数处理，保持 heading-number 的 error；role=body 只记录当前版式映射结果，不代表人工语义定论。",
+  "business_confirmation": "核定第11段真实角色、该写法在本类文书中的适用性，以及 error 或 warning 的最终级别。"
+}

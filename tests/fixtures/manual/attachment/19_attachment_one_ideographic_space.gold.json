@@ -1,0 +1,86 @@
+{
+  "doc_type": "dazi",
+  "annotated_by": "AI 起草（Codex），待业务人工复核",
+  "annotated_at": "2026-09-28",
+  "annotation_method": "按生成脚本构造，核对 DOCX 的 document.xml 或 footer XML；业务规则与角色仍待人工复核",
+  "file": "19_attachment_one_ideographic_space.docx",
+  "purpose": "反例：附件说明前只有一个全角空格（一个汉字宽），不足左空两字",
+  "role_labels": [
+    {
+      "location": "body/p1",
+      "role": "secrecy"
+    },
+    {
+      "location": "body/p2",
+      "role": "title"
+    },
+    {
+      "location": "body/p3",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p4",
+      "role": "body"
+    },
+    {
+      "location": "body/p5",
+      "role": "heading2"
+    },
+    {
+      "location": "body/p6",
+      "role": "body"
+    },
+    {
+      "location": "body/p7",
+      "role": "heading3"
+    },
+    {
+      "location": "body/p8",
+      "role": "body"
+    },
+    {
+      "location": "body/p9",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p10",
+      "role": "body"
+    },
+    {
+      "location": "body/p12",
+      "role": "attachment"
+    },
+    {
+      "location": "body/p15",
+      "role": "signature"
+    },
+    {
+      "location": "body/p16",
+      "role": "date"
+    }
+  ],
+  "parse_expectations": [
+    {
+      "location": "body/p12",
+      "property": "text_prefix",
+      "value": "　附件："
+    },
+    {
+      "location": "body/p12",
+      "property": "first_line_chars",
+      "value": null
+    }
+  ],
+  "parse_known_gaps": [],
+  "expected_findings": [
+    {
+      "rule_id": "attachment-format",
+      "severity": "error",
+      "paragraph": 12,
+      "message_contains": "左空两字",
+      "expected_contains": "左空两字",
+      "actual_contains": "未留空"
+    }
+  ],
+  "known_gaps": []
+}

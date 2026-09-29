@@ -4,7 +4,7 @@
 当前目标：**跑通"规则配置 → 解析 → 角色映射 → 检查 → 报告"全链路，验证技术路线可行**；
 精度与规则覆盖后续迭代。
 
-当前工程状态、验证证据、风险和后续工作见 [工程状态与后续工作](docs/engineering_status.md)；规则需求源头见 [格式规则](docs/format_rules.md)；三张原图逐条实现情况见 [格式要求审计](docs/format_requirements_audit.md)。
+当前工程状态、验证证据、风险和后续工作见 [工程状态与后续工作](docs/engineering_status.md)；规则需求源头见 [格式规则](docs/format_rules.md)；三张原图逐条实现情况见 [格式要求审计](docs/format_requirements_audit.md)；本轮 IR 扩展与待办见 [TODO](docs/TODO.md)。
 
 ## 快速开始
 
@@ -27,7 +27,19 @@ document-checker check samples/违规示例.docx --report 报告.md --json 报�
 ```
 
 已注入 10 类违规的演示样本见 `samples/`，对应报告见 `samples/检查报告-违规示例.md`。
-自生成合规样本（大字版/小字版）未产生 Finding，可作为合成回归基准；真实 Word 误报率仍待独立样本评测。
+本轮验证过的合规样本是 `samples/合规-呈报稿大字版-新版.docx` 与小字版对应文件，均为 0 Finding。旧同名文件使用旧附件缩进规则，不能作为当前合规依据。19 个 Word 回归案例（16 份不同 DOCX）的 gold 仍待业务人工复核。
+
+## 本地页面与接口
+
+安装基础依赖后运行：
+
+```powershell
+.\.venv\Scripts\python -m uvicorn document_checker.api:app --host 127.0.0.1 --port 8765
+```
+
+在浏览器打开 [本地模板管理页](http://127.0.0.1:8765/)。请从该地址打开，不要直接用 `file://` 打开 HTML。页面现可上传 DOCX 提取**候选属性**、确认并保存自定义规则、选模板执行真实格式和错字检查。自定义模板保存在本机 `data/templates/`，该目录不进入 Git。接口和当前边界见 [前后端联调说明](docs/frontend_backend_integration.md)。
+
+错字精检默认不调用外部大模型；若已配置可用模型网关，设置 `DOCUMENT_CHECKER_USE_LLM=1` 后才尝试调用。报告会显示实际后端及未检查范围。逐页 PDF 预览和红黄坐标标注已接入，需安装 LibreOffice 并保证 `soffice` 可执行，或设置 `DOCUMENT_CHECKER_SOFFICE` 路径；本机开发环境可使用 `data/tools/lo-unpacked/` 中提取的渲染器。原 DOCX 修复下载尚未接入。
 
 ## 处理链路
 
@@ -38,6 +50,7 @@ Word 文件
   → rule_engine    规则引擎：加载 YAML（common + 文书类型两层合并），按 checker 名调度
   → checkers/*     检查器：注册表式可插拔，只依赖解析层数据结构
   → report         Markdown + JSON 双形态报告（规则/级别/位置/期望/实际/修复建议）
+  → preview        LibreOffice 渲染 PDF；PyMuPDF 获取页图及文字坐标，前端红黄标注
 ```
 
 ## 规则 YAML 写法
@@ -67,6 +80,7 @@ rules:
 | line_spacing | 固定行距 32 磅（大字版）/ 29.5 磅（小字版） |
 | char_spacing | 字符间距加宽 0.4 磅 / 标准 |
 | page_number | "— 1 —"格式、一字线、居中、宋体四号、页脚底端距离 1.75cm |
+| odd_even_setting | 奇偶页不同设置；奇偶页留字的视觉检测尚未实现 |
 | heading_number | 一、／（一）／1.／（1）层级形式，三四级右侧不空格，正文可疑编号 |
 | secrecy | 秘级位置（左上角顶格）、字体字号加粗、"秘 密"空一格 |
 | attachment | 左空两字、前文空行、名称后不加标点 |
@@ -124,31 +138,21 @@ heading_num, attachment_punct, date_format, secrecy_bold`（旧名
 合规样本（含导入重排件）应零误报，注入的每类违规应全部命中。
 **每次改规则或检查器后，`python -m pytest tests/` 即完成回归。**
 
-## 错别字检查（初版）
+## 错别字检查
 
-```bash
-document-checker typo 文件.docx [--threshold 0.9] [--report 报告.md] [--no-llm]
-document-checker inject 样本.docx --out 错字样本.docx [--pairs 部署,补贴]   # 造测试数据
-```
+链路：DOCX 解析 → 过滤和分句 → ChineseErrorDetectorElectra 初筛 → 4B 或显式配置的 27B 服务精检 → 校验、定位及报告。
 
-链路（与技术方案一致）：
-```
-解析(复用 docx_parser) → 启发式过滤(文号/日期/页码/非中文/保护词表)
-→ 按句拆分(保留偏移量，长句再切短句) → ChineseErrorDetectorElectra 字级粗筛
-→ LLM 精检(强约束 JSON，只改错别字，三重校验防过度修改)
-```
+本机真实 ELECTRA 初筛冒烟（未配置 4B/27B 时只测第 4 步）：
 
-- **检测器**：`xurong123/ChineseErrorDetectorElectra`（ELECTRA 字级分类，OK/ERR）。
-  下载：`huggingface_hub.snapshot_download("xurong123/ChineseErrorDetectorElectra",
-  local_dir="models/ced", allow_patterns=[config.json, model.safetensors, tokenizer*, vocab.txt, special_tokens_map.json])`，
-  用 `CED_MODEL_DIR` 环境变量指到目录即可。模型不可用时自动退回"混淆词典+叠字"启发式检测器。
-- **精检**：`src/document_checker/typo/corrector.py` 走 agent-gw（OpenAI 兼容 chat），`--model` 指定型号；
-  三重校验：原文必须逐字在句中、改动字数差≤1、保护词表（定金/不起诉等）禁改。
-  凭证无权限或不可用时自动退回启发式纠错，链路不断。
-- **阈值**：默认 0.5，实测公文语料建议 0.9 左右（注入错字概率均 ≥0.99；
-  正式标定需要标注评测集，同格式检查的回归思路）。
-- **验证**：`inject` 往真实内容样本注入 5 处错字（资全/官理/按排/布署/监官），
-  初版全检出、零漏报；合规样本零误报。报告见 `samples/错别字检查报告-示例.md`。
+    python scripts/typo_model_smoke.py --detector-model-dir data/models/ChineseErrorDetectorElectra --device cpu
+
+模型服务可用后，要求两个模型均真实运行，不允许回退：
+
+    document-checker typo 文件.docx --detector-model-dir data/models/ChineseErrorDetectorElectra --device cuda --model twnlp/ChineseErrorCorrector4-4B --corrector-url http://127.0.0.1:8000/v1 --corrector-protocol corrected_text --require-models --json typo.json
+
+ELECTRA 已在本机 CPU 用公开权重真实运行。4B/27B 尚无可用权重或服务；当前只完成 OpenAI 兼容服务的模拟测试，不能作为真实模型验收。普通模式下缺模型仍可退回词表验证链路，但报告标记为“未检查”；--require-models 会直接失败。4B 的官方输出是整句纠正结果，代码会剥离 think 段并逐字比对；27B 的 JSON 协议须与实际服务确认。
+
+下载模型、服务部署、复现命令和边界见 [错字模型接入与验证](docs/typo_model_integration.md)。
 
 ## 已知边界与后续路线
 

@@ -1,0 +1,97 @@
+{
+  "file": "15_body_in_table.docx",
+  "doc_type": "dazi",
+  "purpose": "反例：表格单元格内有一段正文（错误宋体小二加粗）；验证表格内容是否进入解析与检查范围",
+  "annotated_by": "AI 起草（Kimi），待业务人工复核",
+  "annotated_at": "2026-09-27",
+  "annotation_method": "生成后核对 OOXML（document.xml 中 w:tbl/w:tc 内段落）",
+  "role_labels": [
+    {
+      "location": "body/p1",
+      "role": "secrecy"
+    },
+    {
+      "location": "body/p2",
+      "role": "title"
+    },
+    {
+      "location": "body/p3",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p4",
+      "role": "body"
+    },
+    {
+      "location": "body/p5",
+      "role": "heading2"
+    },
+    {
+      "location": "body/p6",
+      "role": "body"
+    },
+    {
+      "location": "body/p7",
+      "role": "heading3"
+    },
+    {
+      "location": "body/p8",
+      "role": "body"
+    },
+    {
+      "location": "body/p9",
+      "role": "heading1"
+    },
+    {
+      "location": "body/p10",
+      "role": "body"
+    },
+    {
+      "location": "body/p12",
+      "role": "attachment"
+    },
+    {
+      "location": "body/p15",
+      "role": "signature"
+    },
+    {
+      "location": "body/p16",
+      "role": "date"
+    },
+    {
+      "location": "table1/r1c1/p1",
+      "role": "body",
+      "note": "表格单元格内正文，人工标 body"
+    }
+  ],
+  "parse_known_gaps": [],
+  "expected_findings": [],
+  "known_gaps": [
+    {
+      "rule_id": "font-body",
+      "severity": "error",
+      "location": "table1/r1c1/p1",
+      "message_contains": "字体",
+      "reason": "表格段落已解析且字体确实错误，但正文角色与 font-body 规则尚未应用（缺口在规则适用层）"
+    }
+  ],
+  "parse_expectations": [
+    {
+      "location": "table1/r1c1/p1",
+      "property": "text",
+      "value": "表格内正文：专项资金拨付使用情况如下。"
+    },
+    {
+      "location": "table1/r1c1/p1/run1",
+      "property": "font_ea",
+      "value": "宋体"
+    }
+  ],
+  "role_known_gaps": [
+    {
+      "location": "table1/r1c1/p1",
+      "role": "body",
+      "reason": "表格段落已进入 IR，语义角色与规则适用范围尚待确定"
+    }
+  ]
+}

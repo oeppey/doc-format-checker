@@ -17,7 +17,8 @@ def page_setup(model, roles, params):
     tol = params.get("tolerance_cm", 0.05)
     findings = []
     items = [("top_cm", "上边距"), ("bottom_cm", "下边距"),
-             ("left_cm", "左边距"), ("right_cm", "右边距")]
+             ("left_cm", "左边距"), ("right_cm", "右边距"),
+             ("footer_distance_cm", "页脚距纸张底边")]
     for si, sec in enumerate(model.sections):
         loc = f"第{si + 1}节页面设置" if len(model.sections) > 1 else "页面设置"
         for key, label in items:
@@ -42,10 +43,7 @@ def _fmt_location(p):
 
 @register("font_format")
 def font_format(model, roles, params):
-    """字体/字号/加粗/对齐。params:
-    role, fonts(中文字体别名列表), ascii_fonts(西文字体别名列表),
-    size_pt, bold, alignment(center/left/right), required(缺角色是否报错)
-    """
+    """Check every content run, including mixed Chinese/ASCII runs."""
     role = params["role"]
     idxs = roles.get(role, [])
     if not idxs:
@@ -65,39 +63,33 @@ def font_format(model, roles, params):
         if p.is_blank:
             continue
         loc = _fmt_location(p)
-        issues = []
         if align:
-            want = align_map.get(align.lower(), align.upper())
+            want = align_map[align]
             got = p.alignment or "LEFT"
             if got != want:
-                issues.append(("对齐方式", {"center": "居中", "left": "居左", "right": "居右"}.get(align, align),
-                               {"CENTER": "居中", "LEFT": "居左/默认", "RIGHT": "居右"}.get(got, got)))
-        checked_font = checked_size = checked_bold = False
-        for r in p.content_runs():
-            if not checked_font and fonts and CJK_RE.search(r.text):
-                checked_font = True
-                if normalize_font(r.font_ea) not in fonts:
-                    issues.append(("中文字体", params["fonts"][0], r.font_ea or "未设置"))
-            if not checked_font and ascii_fonts and ASCII_RE.search(r.text) and not CJK_RE.search(r.text):
-                checked_font = True
-                if normalize_font(r.font_ascii) not in ascii_fonts:
-                    issues.append(("西文字体", params["ascii_fonts"][0], r.font_ascii or "未设置"))
-            if not checked_size and size is not None:
-                checked_size = True
-                if r.size_pt is None or abs(r.size_pt - size) > 0.01:
-                    issues.append(("字号", f"{size} 磅", f"{r.size_pt} 磅" if r.size_pt else "未设置"))
-            if not checked_bold and bold is not None:
-                checked_bold = True
-                if bool(r.bold) != bool(bold):
-                    issues.append(("加粗", "加粗" if bold else "不加粗",
-                                   "加粗" if r.bold else "不加粗"))
-        for what, exp, act in issues:
-            findings.append(Finding(
-                location=loc,
-                message=f"「{role}」{what}不符合要求",
-                expected=str(exp), actual=str(act),
-                suggestion=f"将{what}调整为：{exp}",
-            ))
+                findings.append(Finding(
+                    location=loc, message=f"「{role}」对齐方式不符合要求",
+                    expected=align, actual=got, suggestion=f"将对齐方式调整为：{align}"))
+        for run_index, r in enumerate(p.runs, 1):
+            if not r.text.strip():
+                continue
+            run_loc = f"{loc}（run {run_index}）"
+            issues = []
+            if fonts and CJK_RE.search(r.text) and "font_ea" not in r.unresolved and normalize_font(r.font_ea) not in fonts:
+                issues.append(("中文字体", params["fonts"][0], r.font_ea or "未设置"))
+            if ascii_fonts and ASCII_RE.search(r.text) and "font_ascii" not in r.unresolved and normalize_font(r.font_ascii) not in ascii_fonts:
+                issues.append(("西文字体", params["ascii_fonts"][0], r.font_ascii or "未设置"))
+            if size is not None and (r.size_pt is None or abs(r.size_pt - size) > 0.01):
+                issues.append(("字号", f"{size} 磅",
+                               f"{r.size_pt} 磅" if r.size_pt is not None else "未设置"))
+            if bold is not None and r.bold is not bold:
+                issues.append(("加粗", "加粗" if bold else "不加粗",
+                               "加粗" if r.bold else ("不加粗" if r.bold is False else "未设置")))
+            for what, exp, act in issues:
+                findings.append(Finding(
+                    location=run_loc, message=f"「{role}」{what}不符合要求",
+                    expected=str(exp), actual=str(act),
+                    suggestion=f"将{what}调整为：{exp}"))
     return findings
 
 
@@ -118,8 +110,12 @@ def line_spacing(model, roles, params):
                     actual = "未设置（单倍行距）"
                 elif p.line_rule == "exact":
                     actual = f"固定值 {p.line_pt} 磅"
+                elif p.line_rule == "atLeast":
+                    actual = f"最小值 {p.line_pt} 磅"
+                elif p.line_multiple is not None:
+                    actual = f"{p.line_multiple:g} 倍行距"
                 else:
-                    actual = f"{round(p.line_pt / 240, 2)} 倍行距"
+                    actual = "行距无法解析"
                 findings.append(Finding(
                     location=_fmt_location(p),
                     message=f"「{role}」行距不符合要求",
@@ -131,24 +127,25 @@ def line_spacing(model, roles, params):
 
 @register("char_spacing")
 def char_spacing(model, roles, params):
-    """字符间距（加宽磅值）。params: roles[], spacing_pt, tolerance_pt"""
+    """Check the effective spacing of every content run."""
     exp = params.get("spacing_pt", 0.0)
     tol = params.get("tolerance_pt", 0.05)
     findings = []
     for role in params.get("roles", ["body"]):
         for i in roles.get(role, []):
             p = model.paragraphs[i]
-            r = p.main_run()
-            if not r:
-                continue
-            act = r.char_spacing_pt
-            ok = (act is None and abs(exp) <= tol) or (act is not None and abs(act - exp) <= tol)
-            if not ok:
-                findings.append(Finding(
-                    location=_fmt_location(p),
-                    message=f"「{role}」字符间距不符合要求",
-                    expected="标准" if exp == 0 else f"加宽 {exp} 磅",
-                    actual="标准" if not act else f"加宽 {act} 磅",
-                    suggestion="字体 → 高级 → 字符间距 → 设为" + ("标准" if exp == 0 else f"加宽 {exp} 磅"),
-                ))
+            for run_index, r in enumerate(p.runs, 1):
+                if not r.text.strip():
+                    continue
+                act = r.char_spacing_pt
+                ok = (act is None and abs(exp) <= tol) or (
+                    act is not None and abs(act - exp) <= tol)
+                if not ok:
+                    findings.append(Finding(
+                        location=f"{_fmt_location(p)}（run {run_index}）",
+                        message=f"「{role}」字符间距不符合要求",
+                        expected="标准" if exp == 0 else f"加宽 {exp} 磅",
+                        actual="标准" if act is None or act == 0 else f"加宽 {act} 磅",
+                        suggestion="字体 → 高级 → 字符间距 → 设为" +
+                        ("标准" if exp == 0 else f"加宽 {exp} 磅")))
     return findings

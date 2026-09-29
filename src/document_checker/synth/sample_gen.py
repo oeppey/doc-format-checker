@@ -76,8 +76,8 @@ DEFAULT_CONTENT = {
 
 
 # ---------------------------------------------------------------- 底层写入
-def _set_font(run, cn_font, size_pt, bold, spacing_pt=None):
-    run.font.name = "仿宋"          # 西文字体统一仿宋（注意事项第3条）
+def _set_font(run, cn_font, size_pt, bold, spacing_pt=None, ascii_font="仿宋"):
+    run.font.name = ascii_font      # 西文字体缺省仿宋（注意事项第3条）；页码等场景按规则覆盖
     run.font.size = Pt(size_pt)
     run.font.bold = bold
     rPr = run._element.get_or_add_rPr()
@@ -121,10 +121,23 @@ def _set_right_chars(p, chars=200):
     ind.set(qn("w:rightChars"), str(chars))
 
 
-def _add_page_field(para, result_text="1"):
+def _add_page_field(para, result_text="1", font=None, size_pt=None):
+    """插入 PAGE 域；font/size_pt 给域结果 run 显式格式（否则域结果按 docDefaults 渲染，
+    页码数字在 Word 里会显示成错误字体字号）。"""
     fld = OxmlElement("w:fldSimple")
     fld.set(qn("w:instr"), r" PAGE   \* MERGEFORMAT ")
     r = OxmlElement("w:r")
+    if font and size_pt:
+        rPr = OxmlElement("w:rPr")
+        rFonts = OxmlElement("w:rFonts")
+        for attr in ("w:ascii", "w:hAnsi", "w:eastAsia"):
+            rFonts.set(qn(attr), font)
+        rPr.append(rFonts)
+        for tag in ("w:sz", "w:szCs"):
+            sz = OxmlElement(tag)
+            sz.set(qn("w:val"), str(int(size_pt * 2)))
+            rPr.append(sz)
+        r.append(rPr)
     t = OxmlElement("w:t")
     t.text = result_text
     r.append(t)
@@ -159,11 +172,12 @@ def build_doc(cfg: dict, out_path: str, content: dict | None = None,
     for r in list(fp.runs):
         r._element.getparent().remove(r._element)
     dash = cfg["page_num"]["dash"]
+    pg_font, pg_size = cfg["page_num"]["font"], cfg["page_num"]["size"]
     r1 = fp.add_run(f"{dash} ")
-    _set_font(r1, cfg["page_num"]["font"], cfg["page_num"]["size"], False)
-    _add_page_field(fp, "1")
+    _set_font(r1, pg_font, pg_size, False, ascii_font=pg_font)
+    _add_page_field(fp, "1", font=pg_font, size_pt=pg_size)
     r2 = fp.add_run(f" {dash}")
-    _set_font(r2, cfg["page_num"]["font"], cfg["page_num"]["size"], False)
+    _set_font(r2, pg_font, pg_size, False, ascii_font=pg_font)
 
     line_pt = cfg["line_pt"]
     cs = cfg["char_spacing_pt"]
@@ -197,11 +211,12 @@ def build_doc(cfg: dict, out_path: str, content: dict | None = None,
         p = doc.add_paragraph()
         _set_exact_line(p, line_pt)
         b = cfg["body"]
-        _set_font(p.add_run("  附件：" + content["attachment"]), b["font"], b["size"], b["bold"], cs)
+        _set_font(p.add_run("　　附件：" + content["attachment"]), b["font"], b["size"], b["bold"], cs)
 
-    # 落款（下空二行，右空二字）
-    doc.add_paragraph()
-    doc.add_paragraph()
+    # 落款（下空二行，空段也采用正文固定行距，右空二字）
+    for _ in range(2):
+        blank = doc.add_paragraph()
+        _set_exact_line(blank, line_pt)
     b = cfg["body"]
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.RIGHT

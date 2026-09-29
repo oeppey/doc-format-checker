@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模板管理 · 文档审查助手</title>
+<style>
+/* ============================================================
+   文档审查助手 · 模板管理模块
+   设计语言：紫色主色 + 渐变顶栏 + 圆角卡片 + 左侧导航
+   主题：浅色（单一主题）
+   ============================================================ */
+
+:root{
+  /* 浅色主题（本系统唯一主题） */
+  --bg:#f4f5fb;
+  --bg-soft:#eceef8;
+  --panel:#ffffff;
+  --panel-2:#fafbff;
+  --panel-3:#f1f2fa;
+  --panel-hover:#f6f7fe;
+  --border:rgba(24,30,70,.09);
+  --border-2:rgba(24,30,70,.16);
+  --text:#161b33;
+  --text-2:#5b6486;
+  --text-3:#8a93b2;
+  --text-4:#adb4cc;
+  --primary:#6a58ea;
+  --primary-2:#5a46d8;
+  --primary-3:#5844e0;
+  --primary-soft:rgba(106,88,234,.09);
+  --primary-soft-2:rgba(106,88,234,.18);
+  --success:#12b981;
+  --success-soft:rgba(18,185,129,.1);
+  --warn:#e08c1a;
+  --warn-soft:rgba(224,140,26,.11);
+  --danger:#e8485f;
+  --danger-soft:rgba(232,72,95,.1);
+  --info:#2b86e0;
+  --info-soft:rgba(43,134,224,.1);
+  --shadow-sm:0 1px 2px rgba(24,30,70,.06);
+  --shadow:0 8px 24px -10px rgba(24,30,70,.16),0 2px 6px rgba(24,30,70,.06);
+  --shadow-lg:0 24px 60px -22px rgba(24,30,70,.28),0 8px 20px rgba(24,30,70,.08);
+  --glow:0 0 0 1px rgba(106,88,234,.35),0 8px 28px -10px rgba(106,88,234,.4);
+  --grad:linear-gradient(135deg,#8f7cfb 0%,#6a56ee 100%);
+  --grad-soft:linear-gradient(135deg,rgba(143,124,251,.18),rgba(106,86,238,.08));
+  --r-sm:8px; --r:12px; --r-lg:16px; --r-xl:20px;
+  --sidebar-w:224px;
+  --paper:#ffffff;
+  --paper-text:#1a1a1a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",-apple-system,"Helvetica Neue",sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden;transition:background .25s ease,color .25s ease}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(900px 520px at 12% -8%,rgba(106,88,234,.14),transparent 62%),
+    radial-gradient(760px 460px at 92% 4%,rgba(78,168,255,.10),transparent 60%),
+    radial-gradient(700px 500px at 60% 108%,rgba(155,110,255,.07),transparent 62%);
+}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--text-4);background-clip:content-box;border:2px solid transparent}
+::selection{background:var(--primary-soft-2);color:var(--text)}
+input,button,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+button{cursor:pointer}
+
+/* ============ 应用骨架 ============ */
+.app{position:relative;z-index:1;display:flex;height:100vh;padding:10px 12px 12px 12px;gap:12px}
+
+/* ============ 侧边栏 ============ */
+.sidebar{
+  width:var(--sidebar-w);flex:0 0 var(--sidebar-w);
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px}
+.brand-mark{
+  width:34px;height:34px;border-radius:10px;background:var(--grad);
+  display:grid;place-items:center;flex:0 0 34px;
+  box-shadow:0 6px 18px -6px rgba(123,108,246,.85);
+}
+.brand-mark svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.brand-txt h1{font-size:13.5px;font-weight:600;letter-spacing:.3px;line-height:1.25}
+.brand-txt p{font-size:10px;color:var(--text-3);letter-spacing:.9px;text-transform:uppercase;line-height:1.4}
+.nav-wrap{flex:1;overflow-y:auto;padding:10px 10px 10px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 10px;border-radius:9px;margin-bottom:2px;
+  color:var(--text-2);font-size:13px;text-align:left;position:relative;
+  transition:background .16s,color .16s;
+}
+.nav-item svg{width:16px;height:16px;flex:0 0 16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.nav-item:hover{background:var(--panel-hover);color:var(--text)}
+.nav-item.active{font-weight:600;color:var(--primary);background:var(--primary-soft)}
+.nav-item.active::before{
+  content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);
+  width:3px;height:17px;border-radius:0 3px 3px 0;background:var(--primary);
+}
+.nav-item .nav-count{margin-left:auto;font-size:10.5px;padding:1px 7px;border-radius:20px;background:var(--primary-soft-2);font-weight:600;color:var(--primary)}
+
+/* ============ 主区 ============ */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+/* 返回按钮（模板详情页） */
+.icon-btn{
+  width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+  background:rgba(255,255,255,.75);border:1px solid rgba(24,30,70,.1);
+  transition:background .16s,border-color .16s,transform .16s;position:relative;
+}
+.icon-btn:hover{background:#fff;border-color:var(--primary)}
+.icon-btn svg{width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+.content{flex:1;min-height:0;overflow-y:auto;padding-top:8px;padding-right:2px}
+.view{display:none}
+.view.active{display:block;animation:viewIn .28s cubic-bezier(.22,.7,.3,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ============ 通用组件 ============ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:33px;padding:0 14px;border-radius:9px;font-size:12.5px;font-weight:600;
+  border:1px solid var(--border-2);background:var(--panel-2);color:var(--text-2);
+  transition:all .16s;white-space:nowrap;
+}
+.btn:hover{background:var(--panel-3);color:var(--text);border-color:var(--border-2)}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 6px 18px -7px rgba(123,108,246,.9)}
+.btn-primary:hover{filter:brightness(1.09);box-shadow:0 10px 26px -8px rgba(123,108,246,1)}
+.btn-ghost{background:transparent;border-color:var(--border)}
+.btn-sm{height:28px;padding:0 10px;font-size:11.5px;border-radius:8px}
+.btn-lg{height:38px;padding:0 20px;font-size:13.5px;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none!important}
+
+.tag{
+  display:inline-flex;align-items:center;gap:4px;height:21px;padding:0 8px;border-radius:6px;
+  font-size:10.5px;font-weight:600;letter-spacing:.2px;
+  background:var(--panel-3);color:var(--text-2);border:1px solid var(--border);
+}
+.tag-green{background:var(--success-soft);color:var(--success);border-color:rgba(53,211,154,.25)}
+.tag-warn{background:var(--warn-soft);color:var(--warn);border-color:rgba(255,180,84,.25)}
+.tag-info{background:var(--info-soft);color:var(--info);border-color:rgba(78,168,255,.25)}
+
+/* ============ 页头 ============ */
+.page-head{display:flex;align-items:flex-start;gap:16px;padding:4px 4px 18px}
+.page-head h2{font-size:19px;font-weight:600;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
+.page-head h2 .h2-mark{width:4px;height:17px;border-radius:3px;background:var(--grad);display:inline-block}
+.page-head p{font-size:12.5px;color:var(--text-3);margin-top:5px;margin-left:13px}
+.page-head .head-acts{margin-left:auto;display:flex;gap:9px;align-items:center}
+
+/* ============ 输入框 ============ */
+.inp{
+  height:31px;padding:0 11px;border-radius:9px;font-size:12.5px;
+  background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+  transition:border-color .16s,box-shadow .16s;width:100%;
+}
+.inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.inp::placeholder{color:var(--text-3);opacity:.72}
+
+/* ============ 模板卡片 ============ */
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(500px,1fr));gap:13px;padding-bottom:24px}
+.tpl-card{
+  position:relative;background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;box-shadow:var(--shadow-sm);transition:border-color .18s,transform .18s,box-shadow .18s;
+  display:flex;flex-direction:column;
+}
+.tpl-card::before{
+  content:"";position:absolute;left:0;top:0;right:0;height:2px;
+  background:var(--grad);opacity:0;transition:opacity .18s;
+}
+.tpl-card:hover{transform:translateY(-2px);border-color:var(--border-2);box-shadow:var(--shadow)}
+.tpl-card:hover::before{opacity:1}
+.tpl-card.is-default::before{opacity:1}
+.tpl-hd{display:flex;align-items:flex-start;gap:11px;padding:15px 15px 12px}
+.tpl-ico{
+  width:38px;height:38px;flex:0 0 38px;border-radius:11px;
+  display:grid;place-items:center;background:var(--grad-soft);
+  border:1px solid rgba(123,108,246,.24);
+}
+.tpl-ico svg{width:19px;height:19px;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.tpl-tt{min-width:0;flex:1}
+.tpl-tt h3{font-size:14px;font-weight:600;line-height:1.45;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tpl-tt .sub{font-size:11.5px;color:var(--text-3);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tpl-tt .sub i{width:3px;height:3px;border-radius:50%;background:var(--text-4);display:inline-block;font-style:normal}
+.specs{padding:0 15px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.spec{background:var(--panel);padding:9px 12px;min-width:0}
+.spec-k{font-size:10.5px;color:var(--text-3);letter-spacing:.3px;display:flex;align-items:center;gap:4px}
+.spec-v{font-size:12px;color:var(--text);font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spec-v .u{color:var(--text-3);font-weight:400;font-size:11px}
+.spec-v em{font-style:normal;color:var(--primary)}
+.tpl-ft{display:flex;align-items:center;gap:8px;padding:11px 15px;margin-top:auto}
+.tpl-ft .meta{font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:6px}
+.tpl-ft .meta b{color:var(--text-2);font-weight:600}
+.tpl-ft .acts{margin-left:auto;display:flex;gap:6px}
+
+/* 空状态 */
+.empty{
+  grid-column:1/-1;padding:64px 24px;text-align:center;
+  border:1px dashed var(--border-2);border-radius:var(--r-lg);background:var(--panel);
+}
+.empty .e-ico{width:64px;height:64px;margin:0 auto 16px;border-radius:20px;background:var(--grad-soft);display:grid;place-items:center;border:1px solid rgba(123,108,246,.2)}
+.empty .e-ico svg{width:28px;height:28px;stroke:var(--primary-2);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.empty h3{font-size:14.5px;font-weight:600;margin-bottom:6px}
+.empty p{font-size:12.5px;color:var(--text-3);margin-bottom:18px}
+
+/* ============ 向导 ============ */
+.wizard{max-width:1180px;margin:0 auto;padding-bottom:28px}
+.stepper{
+  display:flex;align-items:center;gap:0;padding:16px 20px;margin-bottom:16px;
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);
+}
+.step{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.step .s-no{
+  width:27px;height:27px;flex:0 0 27px;border-radius:50%;display:grid;place-items:center;
+  font-size:12px;font-weight:600;background:var(--panel-3);color:var(--text-3);
+  border:1px solid var(--border);transition:all .2s;
+}
+.step .s-tx{line-height:1.25}
+.step .s-tx b{display:block;font-size:12.5px;font-weight:600;color:var(--text-3);transition:color .2s}
+.step .s-tx span{font-size:10.5px;color:var(--text-4)}
+.step.on .s-no{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 14px -4px rgba(123,108,246,.9)}
+.step.on .s-tx b{color:var(--text)}
+.step.on .s-tx span{color:var(--text-3)}
+.step.done .s-no{background:var(--success-soft);color:var(--success);border-color:rgba(53,211,154,.38);font-weight:700}
+.step.done .s-tx b{color:var(--text-2)}
+.step-line{flex:1;height:1.5px;background:var(--border-2);margin:0 14px;border-radius:2px;min-width:20px}
+
+.wz-body{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+.wz-pane{display:none;padding:24px}
+.wz-pane.on{display:block;animation:viewIn .3s cubic-bezier(.22,.7,.3,1)}
+.wz-title{font-size:15px;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.wz-desc{font-size:12.5px;color:var(--text-3);margin-bottom:20px;line-height:1.7}
+.wz-foot{display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid var(--border);background:var(--panel-2)}
+.wz-foot .spacer{margin-left:auto}
+.wz-foot .hint{font-size:11.5px;color:var(--text-3);display:flex;align-items:center;gap:6px}
+
+/* 上传区 */
+.dropzone{
+  border:1.5px dashed var(--border-2);border-radius:var(--r-lg);
+  padding:44px 24px;text-align:center;cursor:pointer;position:relative;
+  background:var(--panel-2);transition:all .2s;
+}
+.dropzone:hover{border-color:var(--primary);background:var(--primary-soft)}
+.dropzone.drag{border-color:var(--primary);background:var(--primary-soft);transform:scale(1.006)}
+.dz-ico{
+  width:56px;height:56px;margin:0 auto 15px;border-radius:17px;display:grid;place-items:center;
+  background:var(--grad);box-shadow:0 12px 30px -12px rgba(123,108,246,1);
+}
+.dz-ico svg{width:25px;height:25px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dropzone h3{font-size:14px;font-weight:600;margin-bottom:7px}
+.dropzone p{font-size:12px;color:var(--text-3);line-height:1.7}
+.dropzone .fmt{display:flex;justify-content:center;gap:7px;margin-top:14px}
+.dropzone .fmt span{font-size:10.5px;padding:2.5px 9px;border-radius:6px;background:var(--panel-3);color:var(--text-3);border:1px solid var(--border)}
+
+.up-file{
+  display:none;align-items:center;gap:13px;padding:15px 17px;border-radius:var(--r);
+  background:var(--panel-2);border:1px solid var(--border-2);margin-top:16px;
+}
+.up-file.on{display:flex;animation:viewIn .26s}
+.up-file .f-ico{width:40px;height:40px;flex:0 0 40px;border-radius:11px;display:grid;place-items:center;background:var(--primary-soft);border:1px solid rgba(123,108,246,.25)}
+.up-file .f-ico svg{width:19px;height:19px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.up-file .f-meta{flex:1;min-width:0}
+.up-file .f-meta b{font-size:13px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.up-file .f-meta span{font-size:11.5px;color:var(--text-3)}
+.up-file .f-del{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:transparent;border:1px solid var(--border)}
+.up-file .f-del:hover{background:var(--danger-soft);border-color:rgba(255,107,129,.3)}
+.up-file .f-del svg{width:13px;height:13px;stroke:var(--text-3);fill:none;stroke-width:2.2;stroke-linecap:round}
+.up-file .f-del:hover svg{stroke:var(--danger)}
+
+/* 分析动画 */
+.scan-wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:44px;align-items:center;padding:14px 10px;max-width:760px;margin:0 auto}
+.scan-ring{position:relative;width:170px;height:170px;margin:0 auto}
+.scan-ring svg{transform:rotate(-90deg)}
+.scan-ring .bgc{stroke:var(--panel-3);fill:none;stroke-width:9}
+.scan-ring .fgc{stroke:url(#ringGrad);fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .4s cubic-bezier(.3,.8,.3,1)}
+.scan-ring .center{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.scan-ring .pct{font-size:32px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.scan-ring .lbl{font-size:11.5px;color:var(--text-3);margin-top:6px;letter-spacing:.4px}
+.scan-list{display:flex;flex-direction:column;gap:0}
+.scan-item{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px dashed var(--border);opacity:.32;transition:opacity .35s}
+.scan-item:last-child{border-bottom:none}
+.scan-item.on{opacity:1}
+.scan-item .tick{
+  width:19px;height:19px;flex:0 0 19px;border-radius:50%;display:grid;place-items:center;
+  background:var(--panel-3);border:1px solid var(--border);
+}
+.scan-item .tick svg{width:10px;height:10px;stroke:var(--text-4);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.scan-item.on .tick{background:var(--success-soft);border-color:rgba(53,211,154,.35)}
+.scan-item.on .tick svg{stroke:var(--success)}
+.scan-item .tx b{font-size:12.5px;font-weight:500;display:block;line-height:1.5}
+.scan-item .tx span{font-size:11px;color:var(--text-3)}
+.scan-item .rt{margin-left:auto;font-size:11px;color:var(--text-4);font-variant-numeric:tabular-nums}
+.scan-item.on .rt{color:var(--success)}
+
+/* 结果确认：规则清单（单栏，限制最大宽度避免超宽屏下行过长） */
+#fmtGroups{max-width:1100px}
+.fmt-group{margin-bottom:14px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--panel-2)}
+.fmt-group > .fg-hd{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:var(--panel-3);border-bottom:1px solid var(--border);
+}
+.fmt-group > .fg-hd svg{width:14px;height:14px;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.fmt-group > .fg-hd b{font-size:12.5px;font-weight:600}
+.fmt-group > .fg-hd .cnt{margin-left:auto;font-size:10.5px;color:var(--text-3)}
+.fmt-rows{padding:6px 14px 10px}
+.fmt-row{display:grid;grid-template-columns:112px minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.fmt-row:last-child{border-bottom:none}
+.fmt-row > label{font-size:11.5px;color:var(--text-3)}
+.fmt-row .fv{
+  width:100%;height:27px;padding:0 9px;border-radius:7px;font-size:12px;font-weight:500;
+  background:transparent;border:1px solid transparent;color:var(--text);transition:all .15s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fmt-row .fv:hover{background:var(--panel-3);border-color:var(--border)}
+.fmt-row .fv:focus{background:var(--panel);border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.conf{font-size:10px;padding:1.5px 7px;border-radius:20px;font-weight:600;letter-spacing:.2px;background:var(--success-soft);color:var(--success);border:1px solid rgba(53,211,154,.22)}
+.conf.mid{background:var(--warn-soft);color:var(--warn);border-color:rgba(255,180,84,.25)}
+
+/* 预览面板 */
+.preview-panel{
+  position:sticky;top:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;box-shadow:var(--shadow-sm);
+}
+.pp-hd{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--panel-2)}
+.pp-hd svg{width:14px;height:14px;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.pp-hd b{font-size:12.5px;font-weight:600}
+.pp-hd .pp-zoom{margin-left:auto;display:flex;gap:2px;padding:2px;background:var(--panel-3);border-radius:7px;border:1px solid var(--border)}
+.pp-hd .pp-zoom button{padding:2px 8px;border-radius:5px;font-size:10.5px;color:var(--text-3);font-weight:600}
+.pp-hd .pp-zoom button.on{box-shadow:var(--shadow-sm);color:var(--primary);background:#fff}
+.pp-stage{padding:16px;background:var(--panel-3);max-height:520px;overflow:auto}
+.paper{
+  background:var(--paper);color:var(--paper-text);border-radius:5px;
+  box-shadow:0 10px 28px -12px rgba(0,0,0,.5);
+  padding:120px 100px 100px;margin:0 auto;width:780px;
+}
+.paper .p-title{text-align:center;font-weight:700;margin-bottom:10px;letter-spacing:1px}
+.paper .p-sub{text-align:center;font-size:9.5pt;color:#555;margin-bottom:20px;letter-spacing:.5px}
+.paper .p-h1,.paper .p-h2{font-weight:700}
+.paper .p-h1{margin:14px 0 6px}
+.paper .p-h2{margin:12px 0 6px;text-indent:0}
+.paper p{text-indent:2em;margin-bottom:2px;text-align:justify}
+.pp-foot{padding:9px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:6px;background:var(--panel-2)}
+
+/* 命名表单 */
+.name-form{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:24px;align-items:start}
+.name-form > div{min-width:0}
+.frm-field{margin-bottom:17px}
+.frm-field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:7px}
+.frm-field label .req{color:var(--danger);margin-left:3px}
+.frm-field label .tip{font-size:11px;color:var(--text-3);font-weight:400;margin-left:6px}
+.frm-field .inp{height:36px;font-size:13px}
+.frm-field textarea.inp{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-height:1.65}
+.switch-row{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:var(--r);background:var(--panel-2);border:1px solid var(--border)}
+.switch-row .sw-tx{flex:1}
+.switch-row .sw-tx b{font-size:12.5px;font-weight:600;display:block}
+.switch-row .sw-tx span{font-size:11.5px;color:var(--text-3)}
+.switch{width:38px;height:21px;border-radius:20px;background:var(--panel-3);border:1px solid var(--border-2);position:relative;transition:all .2s;flex:0 0 38px}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--text-3);transition:all .2s}
+.switch.on{background:var(--primary);border-color:transparent}
+.switch.on::after{left:19px;background:#fff}
+
+/* 小预览卡 */
+.mini-card{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--panel-2);min-width:0}
+.mini-card .mc-hd{padding:9px 13px;background:var(--panel-3);border-bottom:1px solid var(--border);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+.mini-card .mc-hd svg{width:13px;height:13px;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.mini-rows{padding:4px 13px 8px}
+.mini-row{display:flex;gap:10px;padding:5.5px 0;border-bottom:1px dashed var(--border);font-size:11.5px}
+.mini-row:last-child{border-bottom:none}
+.mini-row .mk{color:var(--text-3);flex:0 0 62px}
+.mini-row .mv{color:var(--text-2);flex:1;min-width:0;text-align:right;overflow-wrap:anywhere}
+
+/* ============ 详情视图 ============ */
+.detail-head{
+  display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:14px;
+  border-radius:var(--r-lg);border:1px solid var(--border);background:var(--panel);box-shadow:var(--shadow-sm);
+}
+.detail-head .dh-ico{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;background:var(--grad-soft);border:1px solid rgba(123,108,246,.24)}
+.detail-head .dh-ico svg{width:22px;height:22px;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.detail-head .dh-tt h2{font-size:16.5px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.detail-head .dh-tt p{font-size:11.5px;color:var(--text-3);margin-top:3px}
+.detail-head .dh-acts{margin-left:auto;display:flex;gap:8px}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1fr) 432px;gap:18px;align-items:start;padding-bottom:26px}
+
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+.tbl th{
+  text-align:left;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:.4px;
+  padding:9px 13px;background:var(--panel-3);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.tbl td{padding:8px 13px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--panel-hover)}
+.tbl td.k{color:var(--text-3);width:118px;white-space:nowrap}
+.tbl td.v{color:var(--text);font-weight:500}
+.tbl td.v .fontname{font-family:"SF Mono",Consolas,monospace;font-size:11.5px;color:var(--primary)}
+.note-box{
+  margin-top:14px;padding:13px 15px;border-radius:var(--r);
+  background:var(--info-soft);border:1px solid rgba(78,168,255,.2);font-size:12px;color:var(--text-2);line-height:1.75;
+}
+.note-box b{color:var(--info)}
+.note-box ol{margin:7px 0 0 17px}
+.note-box li{margin-bottom:3px}
+
+/* ============ Toast ============ */
+.toast-wrap{position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:9px;align-items:center;pointer-events:none}
+.toast{
+  display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:11px;
+  background:var(--panel);border:1px solid var(--border-2);box-shadow:var(--shadow-lg);
+  font-size:12.5px;font-weight:500;color:var(--text);
+  animation:toastIn .3s cubic-bezier(.2,.8,.3,1);min-width:220px;
+}
+.toast svg{width:15px;height:15px;flex:0 0 15px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.toast.ok svg{stroke:var(--success)}
+.toast.err svg{stroke:var(--danger)}
+.toast.info svg{stroke:var(--info)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:none}}
+.toast.out{animation:toastOut .26s forwards}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px) scale(.97)}}
+
+/* ============ 弹层 ============ */
+.modal-mask{
+  position:fixed;inset:0;background:rgba(6,8,16,.62);backdrop-filter:blur(3px);
+  z-index:80;display:none;align-items:center;justify-content:center;padding:24px;
+}
+.modal-mask.on{display:flex;animation:viewIn .2s}
+.modal{
+  width:100%;max-width:430px;background:var(--panel);border:1px solid var(--border-2);
+  border-radius:var(--r-lg);box-shadow:var(--shadow-lg);overflow:hidden;animation:modalIn .26s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.modal-hd{padding:16px 18px 12px;display:flex;align-items:center;gap:10px}
+.modal-hd h3{font-size:14.5px;font-weight:600}
+.modal-bd{padding:0 18px 6px;font-size:12.5px;color:var(--text-2);line-height:1.75}
+.modal-ft{padding:14px 18px;display:flex;gap:9px;justify-content:flex-end;border-top:1px solid var(--border);margin-top:14px;background:var(--panel-2)}
+
+@media (max-width:1360px){
+  .name-form,.detail-grid{grid-template-columns:1fr}
+  .preview-panel{position:static}
+  .tpl-grid{grid-template-columns:1fr}
+}
+/* ============ 文档审查 ============ */
+.page-head .ph-ico{width:38px;height:38px;flex:0 0 38px;border-radius:11px;display:grid;place-items:center;background:var(--grad-soft);border:1px solid rgba(123,108,246,.24)}
+.page-head .ph-ico svg{width:20px;height:20px;fill:none;stroke:var(--primary);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.page-head p{font-size:12px;color:var(--text-3);margin-top:3px;max-width:780px;line-height:1.6}
+
+.review-grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:18px;align-items:start;padding-bottom:26px}
+.rev-panel{display:flex;flex-direction:column;gap:14px}
+.rp-block{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:15px 16px;box-shadow:var(--shadow-sm)}
+.rp-hd{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.rp-hd b{font-size:13.5px;font-weight:600}
+.rp-hd .sub{font-size:11px;color:var(--text-3);margin-left:auto}
+
+.drop{border:1.5px dashed var(--border-2);border-radius:var(--r);padding:16px;text-align:center;color:var(--text-3);font-size:12px;background:var(--panel-2);transition:border-color .16s,background .16s}
+.drop svg{width:22px;height:22px;display:block;margin:0 auto 6px;stroke:var(--primary);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.drop .lk{color:var(--primary);font-weight:600;cursor:pointer}
+.drop .lk:hover{text-decoration:underline}
+.drop .sub{display:block;margin-top:4px;font-size:10.5px}
+.drop.over{border-color:var(--primary);background:var(--primary-soft)}
+.rev-filebar{display:flex;align-items:center;gap:9px;margin-top:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--panel-2)}
+.rev-filebar .fb-ico{flex:none;width:26px;height:26px;border-radius:7px;background:var(--primary-soft);display:grid;place-items:center}
+.rev-filebar .fb-ico svg{width:14px;height:14px;fill:none;stroke:var(--primary);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rev-filebar .fb-main{flex:1;min-width:0}
+.rev-filebar .fb-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-filebar .fb-meta{font-size:10.5px;color:var(--text-3);margin-top:2px;line-height:1.5}
+.rev-filebar .fb-x{flex:none;border:0;background:none;padding:2px 4px;font-family:inherit;font-size:11px;color:var(--text-3);cursor:pointer}
+.rev-filebar .fb-x:hover{color:var(--danger)}
+.rev-go{width:100%;justify-content:center}
+
+.rev-tpls{display:flex;flex-direction:column;gap:9px}
+.rev-tpl{display:flex;align-items:flex-start;gap:11px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:var(--panel-2);transition:border-color .15s,background .15s,box-shadow .15s}
+.rev-tpl:hover{border-color:var(--primary-soft-2)}
+.rev-tpl.on{border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 3px var(--primary-soft)}
+.rev-tpl .rt-ico{width:30px;height:30px;flex:0 0 30px;border-radius:9px;display:grid;place-items:center;background:var(--grad-soft);border:1px solid rgba(123,108,246,.24)}
+.rev-tpl .rt-ico svg{width:16px;height:16px;fill:none;stroke:var(--primary);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rev-tpl .rt-main{min-width:0;flex:1}
+.rev-tpl .rt-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.rev-tpl .rt-desc{font-size:11px;color:var(--text-3);margin-top:2px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rev-tpl .rt-meta{font-size:10.5px;color:var(--text-3);margin-top:4px}
+.rev-tpl .rt-check{width:18px;height:18px;flex:0 0 18px;border-radius:50%;border:1.5px solid var(--border-2);margin-top:6px;display:grid;place-items:center}
+.rev-tpl.on .rt-check{border-color:var(--primary);background:var(--primary)}
+.rev-tpl.on .rt-check svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:1}
+.rev-tpl .rt-check svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .15s}
+
+.rev-result{min-height:300px}
+.rev-empty{margin-top:40px}
+.rv-topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.rv-summary{display:flex;align-items:center;gap:10px;font-size:13px}
+.rv-summary .t-bad{color:var(--danger);font-weight:700}
+.rv-summary .t-fmt{color:var(--warn);font-weight:700}
+.rv-summary .dot{color:var(--text-3)}
+.rv-topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.rv-topbar-right .btn{flex:none}
+.rv-badge{padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.rv-badge.pass{background:var(--success-soft);color:var(--success)}
+.rv-badge.issue{background:var(--danger-soft);color:var(--danger)}
+.rv-hint{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3);margin:-2px 0 12px;line-height:1.6}
+.rv-hint svg{width:13px;height:13px;flex:none;fill:none;stroke:var(--warn);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rv-ok{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:var(--r);background:var(--success-soft);color:var(--success);font-size:12.5px;font-weight:600}
+.rv-ok svg{width:15px;height:15px;flex:none;fill:none;stroke:var(--success);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+.review-layout{display:grid;grid-template-columns:minmax(250px,320px) minmax(0,1fr);gap:18px;align-items:start}
+.review-findings{max-height:75vh;overflow:auto}
+.review-preview-column{min-width:0}
+.review-preview-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:12px}
+.review-preview-head a{margin-left:auto}
+.review-pages{max-height:75vh;overflow:auto;background:#e9edf2;border-radius:10px;padding:14px}
+.review-page-block{max-width:740px;margin:0 auto 22px}
+.review-page-title{text-align:center;font-size:12px;color:var(--text-3);margin-bottom:7px}
+.review-page{position:relative;width:100%;background:white;box-shadow:0 3px 16px #0002}
+.review-page img{display:block;width:100%;height:100%}
+.review-mark{position:absolute;border:2px solid #d97900;background:#ffcd4d66;cursor:pointer;padding:0;z-index:2;border-radius:2px}
+.review-mark.typo{border-color:#c52a2a;background:#f15a5a66}
+.review-mark.page-level{border-radius:50%;background:#ffbd4d}
+.review-mark:focus{outline:3px solid #3157d5;z-index:3}
+.padding-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.padding-controls .fv{width:64px}
+.review-finding{display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:12px 0}
+.review-finding>label{font-weight:700;color:var(--text);font-size:12px}
+.review-finding>span,.review-finding>small{display:block;overflow-wrap:anywhere;line-height:1.5}
+.review-finding>.btn{align-self:flex-start;margin-top:3px}
+.review-unlocated{color:var(--warn)}
+@media(max-width:900px){.review-layout{grid-template-columns:1fr}.review-findings{max-height:none}.review-pages{max-height:none}}
+.rv-legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 12px;font-size:11.5px;color:var(--text-3)}
+.rv-legend .lg{display:flex;align-items:center;gap:6px}
+.rv-legend .sw{width:13px;height:13px;border-radius:4px;display:inline-block}
+.rv-legend .sw-bad{background:var(--danger-soft);border:1px solid var(--danger)}
+.rv-legend .sw-fmt{background:var(--warn-soft);border:1px solid var(--warn)}
+.doc-cap{font-size:12px;color:var(--text-3);margin:2px 0 10px}
+.doc-cap b{color:var(--text-2)}
+
+.annot{font-size:13.5px;line-height:2;color:var(--text);word-break:break-word}
+.annot .al{white-space:pre-wrap;padding:1px 0}
+.annot .al:empty{height:10px}
+.doc-sheet{background:#fff;border:1px solid var(--border);border-radius:8px;padding:26px 30px;box-shadow:var(--shadow-sm);max-width:780px}
+.bad-word{background:var(--danger-soft);color:var(--danger);border-bottom:2px solid var(--danger);border-radius:3px;padding:0 2px;cursor:help;font-weight:600}
+.fmt-punct{background:var(--warn-soft);color:var(--warn);border-bottom:2px solid var(--warn);border-radius:3px;padding:0 2px;cursor:help;font-weight:700}
+.fmt-indent{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:0 5px 5px 0;padding:0 8px;margin:2px 0}
+.fmt-tag{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--warn);background:#fff;border:1px solid var(--warn);border-radius:20px;padding:1px 8px;cursor:help;vertical-align:middle}
+
+
+
+@media (max-width:1360px){
+  .review-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ 侧边栏 ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+      </div>
+      <div class="brand-txt">
+        <h1>文档审查助手</h1>
+        <p>Doc Review</p>
+      </div>
+    </div>
+
+    <nav class="nav-wrap">
+      <button class="nav-item active" data-nav="list">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        模板管理
+        <span class="nav-count" id="navTplCount">2</span>
+      </button>
+      <button class="nav-item" data-nav="review">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        文档审查
+      </button>
+    </nav>
+  </aside>
+
+  <!-- ============ 主区 ============ -->
+  <div class="main">
+    <div class="content" id="content">
+
+      <!-- ==================== 视图一：模板列表 ==================== -->
+      <section class="view active" id="view-list">
+        <div class="page-head">
+          <div>
+            <h2><span class="h2-mark"></span>模板管理</h2>
+            <p>上传 DOCX 提取可读的格式候选值，确认检测项后保存为可复用模板。</p>
+          </div>
+          <div class="head-acts">
+            <button class="btn btn-primary" onclick="startWizard()">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              新建模板
+            </button>
+          </div>
+        </div>
+
+        <div class="tpl-grid" id="tplGrid"></div>
+      </section>
+
+      <!-- ==================== 视图二：新建模板向导 ==================== -->
+      <section class="view" id="view-wizard">
+        <div class="wizard">
+          <div class="stepper">
+            <div class="step on" id="step1"><div class="s-no">1</div><div class="s-tx"><b>上传样本文档</b><span>docx</span></div></div>
+            <div class="step-line"></div>
+            <div class="step" id="step2"><div class="s-no">2</div><div class="s-tx"><b>属性提取</b><span>读取候选值</span></div></div>
+            <div class="step-line"></div>
+            <div class="step" id="step3"><div class="s-no">3</div><div class="s-tx"><b>确认格式</b><span>校对识别结果</span></div></div>
+            <div class="step-line"></div>
+            <div class="step" id="step4"><div class="s-no">4</div><div class="s-tx"><b>命名保存</b><span>入库复用</span></div></div>
+          </div>
+
+          <div class="wz-body">
+
+            <!-- ---- Step 1 ---- -->
+            <div class="wz-pane on" id="pane1">
+              <div class="wz-title">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary-2)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg>
+                上传一份格式标准的公文作为模板样本
+              </div>
+              <div class="wz-desc">
+                系统将解析该文档的页面设置、各级标题字体字号、正文段落格式、页码规范等，生成结构化模板。文档仅用于格式提取，不会外传。
+              </div>
+
+              <div class="dropzone" id="dropzone">
+                <div class="dz-ico"><svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg></div>
+                <h3>拖拽文件到此处，或点击选择文件</h3>
+                <p>支持 Word 格式文档，单个文件不超过 20 MB</p>
+                <div class="fmt"><span>.docx</span></div>
+                <input type="file" id="fileInput" accept=".docx" hidden>
+              </div>
+
+              <div class="up-file" id="upFile">
+                <div class="f-ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+                <div class="f-meta"><b id="upName">呈报稿模板.docx</b><span id="upSize">128 KB · 已就绪</span></div>
+                <button class="f-del" onclick="clearFile()" title="移除"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+              </div>
+            </div>
+
+            <!-- ---- Step 2 ---- -->
+            <div class="wz-pane" id="pane2">
+              <div class="scan-wrap">
+                <div class="scan-ring">
+                  <svg width="170" height="170" viewBox="0 0 170 170">
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#a294ff"/><stop offset="100%" stop-color="#5b49e0"/>
+                      </linearGradient>
+                    </defs>
+                    <circle class="bgc" cx="85" cy="85" r="73"/>
+                    <circle class="fgc" id="ringFg" cx="85" cy="85" r="73" stroke-dasharray="458.7" stroke-dashoffset="458.7"/>
+                  </svg>
+                  <div class="center">
+                    <div class="pct" id="scanPct">0%</div>
+                    <div class="lbl">正在解析</div>
+                  </div>
+                </div>
+                <div class="scan-list" id="scanList"></div>
+              </div>
+            </div>
+
+            <!-- ---- Step 3 ---- -->
+            <div class="wz-pane" id="pane3">
+              <div class="wz-title" style="margin-bottom:4px">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary-2)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                格式要求识别结果
+              </div>
+              <div class="wz-desc" id="resultDesc">共识别 0 项格式规则，点击任意值可直接修正。</div>
+              <div id="fmtGroups"></div>
+            </div>
+
+            <!-- ---- Step 4 ---- -->
+            <div class="wz-pane" id="pane4">
+              <div class="name-form">
+                <div>
+                  <div class="wz-title">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary-2)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/></svg>
+                    为这份模板命名并保存
+                  </div>
+                  <div class="wz-desc">命名后可在「文档审查」中选用该模板，作为格式合规性的比对基准。</div>
+
+                  <div class="frm-field">
+                    <label>模板名称<span class="req">*</span><span class="tip">建议包含机关与文种</span></label>
+                    <input class="inp" id="tplName" placeholder="例如：市纪委监委呈报稿格式" maxlength="40">
+                  </div>
+
+                  <div class="frm-field">
+                    <label>模板说明<span class="tip">选填</span></label>
+                    <textarea class="inp" id="tplDesc" placeholder="描述该模板的适用范围，例如：适用于向委领导呈报的请示、报告类材料。"></textarea>
+                  </div>
+
+                  <div class="switch-row">
+                    <div class="sw-tx"><b>设为默认模板</b><span>新建审查任务时默认选中该模板</span></div>
+                    <div class="switch" id="defaultSw" onclick="this.classList.toggle('on')"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="mini-card">
+                    <div class="mc-hd">
+                      <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                      保存摘要
+                    </div>
+                    <div class="mini-rows" id="saveSummary"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="wz-foot">
+            <button class="btn" onclick="exitWizard()" id="wzCancel">取消</button>
+            <div class="spacer"></div>
+            <div class="hint" id="wzHint"></div>
+            <button class="btn" id="wzPrev" onclick="gotoStep(curStep-1)" style="display:none">上一步</button>
+            <button class="btn btn-primary" id="wzNext" onclick="wzNext()" disabled>开始解析属性</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 视图三：模板详情 ==================== -->
+      <section class="view" id="view-detail">
+        <div class="detail-head">
+          <button class="icon-btn" onclick="showView('list')" title="返回">
+            <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <div class="dh-ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 13.5l1.8 1.8 3.7-3.7"/></svg></div>
+          <div class="dh-tt">
+            <h2 id="dName">模板名称</h2>
+            <p id="dMeta"></p>
+          </div>
+          <div class="dh-acts">
+            <button class="btn btn-primary" onclick="toast('ok','已复制为新模板（草稿）')">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              复制模板
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div>
+            <div class="fmt-group">
+              <div class="fg-hd"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><b>页面设置</b><span class="cnt" id="dc1"></span></div>
+              <table class="tbl"><tbody id="dtPage"></tbody></table>
+            </div>
+
+            <div class="fmt-group">
+              <div class="fg-hd"><svg viewBox="0 0 24 24"><path d="M4 7V5h16v2"/><path d="M9 20h6"/><path d="M12 5v15"/></svg><b>字体与字号</b><span class="cnt" id="dc2"></span></div>
+              <table class="tbl"><thead><tr><th style="width:118px">层级</th><th>字体</th><th style="width:78px">字号</th><th style="width:80px">字重</th><th style="width:78px">对齐</th></tr></thead><tbody id="dtFont"></tbody></table>
+            </div>
+
+            <div class="fmt-group">
+              <div class="fg-hd"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><b>段落格式</b><span class="cnt" id="dc3"></span></div>
+              <table class="tbl"><tbody id="dtPara"></tbody></table>
+            </div>
+
+            <div class="fmt-group">
+              <div class="fg-hd"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 17h8"/></svg><b>页码与版式</b><span class="cnt" id="dc4"></span></div>
+              <table class="tbl"><tbody id="dtPageNum"></tbody></table>
+            </div>
+
+            <div class="fmt-group">
+              <div class="fg-hd"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg><b>其他规范要求</b><span class="cnt" id="dc5"></span></div>
+              <table class="tbl"><tbody id="dtExtra"></tbody></table>
+            </div>
+          </div>
+
+          <div>
+            <div class="preview-panel" style="position:sticky;top:0">
+              <div class="pp-hd">
+                <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                <b>格式预览</b>
+                <div class="pp-zoom" id="zoomSeg2">
+                  <button class="on" data-z="0.46">46%</button>
+                  <button data-z="0.58">58%</button>
+                  <button data-z="0.72">72%</button>
+                </div>
+              </div>
+              <div class="pp-stage"><div class="paper" id="paperDetail"></div></div>
+              <div class="pp-foot">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v5"/></svg>
+                仅示意版式比例，实际以 Word 渲染为准
+              </div>
+            </div>
+
+            <div class="note-box" style="margin-top:14px">
+              <b>审查时将校验</b>
+              <ol>
+                <li>各级标题字体、字号、加粗是否符合模板</li>
+                <li>正文行距、首行缩进、字符间距是否一致</li>
+                <li>页边距与页码格式是否规范</li>
+                <li>标题序号层级（一、／（一）／1.／（1））是否正确</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 视图四：文档审查 ==================== -->
+      <section class="view" id="view-review">
+        <div class="page-head">
+          <div class="ph-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div>
+            <h2>文档审查</h2>
+            <p>上传待审查 DOCX，选择已确认的模板，查看真实检查报告。逐页预览和红黄标注依据本地 PDF 渲染；修复下载将在下一阶段接入。</p>
+          </div>
+        </div>
+
+        <div class="review-grid">
+          <!-- 左栏：配置 -->
+          <div class="rev-panel">
+            <div class="rp-block">
+              <div class="rp-hd"><b>① 待审查文档</b></div>
+              <div class="drop" id="revDrop">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                <p>拖入或 <label class="lk" for="revFile">选择文件</label>（.docx）</p>
+                <span class="sub">仅支持 DOCX；点击“开始审查”后上传并检查</span>
+                <input type="file" id="revFile" accept=".docx" hidden>
+              </div>
+              <div class="rev-filebar" id="revFileBar" hidden></div>
+            </div>
+
+            <div class="rp-block">
+              <div class="rp-hd"><b>② 选择标准模板</b><span class="sub">取自模板管理库</span></div>
+              <div class="rev-tpls" id="revTpls"></div>
+            </div>
+
+            <button class="btn btn-primary btn-lg rev-go" id="revGo" onclick="runReview()">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>开始审查
+            </button>
+          </div>
+
+          <!-- 右栏：结果 -->
+          <div class="rev-result" id="revResult">
+            <div class="empty rev-empty">
+              <div class="e-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+              <h3>尚未开始审查</h3>
+              <p>在左侧上传 DOCX 并选择模板，点击“开始审查”后查看后端真实报告。审查后可查看逐页预览和红黄标注。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- 确认弹层 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <div class="modal-hd">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round"><path d="M12 9v5"/><circle cx="12" cy="17.5" r=".6" fill="var(--warn)"/><path d="M10.3 3.9L2.6 17.2A2 2 0 0 0 4.3 20.2h15.4a2 2 0 0 0 1.7-3l-7.7-13.3a2 2 0 0 0-3.4 0z"/></svg>
+      <h3 id="mdTitle">确认删除</h3>
+    </div>
+    <div class="modal-bd" id="mdBody">删除后不可恢复，是否继续？</div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" id="mdOk">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   数据层：来自《常用公文格式》规范
+   ============================================================ */
+const PRESETS = {
+  large: {
+    apply:'适用于向委领导呈报的材料',
+    page:{ paper:'A4（210 mm × 297 mm）', top:'3.8 cm', bottom:'3.3 cm', left:'2.7 cm', right:'2.7 cm', footer:'1.75 cm' },
+    fonts:{
+      title:{ name:'方正小标宋 GBK', size:'小一', weight:'加黑', align:'居中' },
+      h1:   { name:'方正黑体 GBK',  size:'小二', weight:'加黑', align:'左对齐' },
+      h2:   { name:'方正楷体 GBK',  size:'小二', weight:'加黑', align:'左对齐' },
+      h3:   { name:'方正仿宋 GBK',  size:'小二', weight:'加黑', align:'左对齐' },
+      h4:   { name:'方正仿宋 GBK',  size:'小二', weight:'加黑', align:'左对齐' },
+      body: { name:'方正仿宋 GBK',  size:'小二', weight:'加黑', align:'两端对齐' },
+      west: { name:'仿宋', desc:'西文与文号「泰纪*〔202*〕**号」同用仿宋' },
+      num:  { name:'宋体', size:'四号', weight:'常规', align:'居中' }
+    },
+    para:{ lineHeight:'32 磅', charSpacing:'加宽 0.4 磅', indent:'首行缩进 2 字符', space:'段前段后 0 行', wrap:'允许西文换行' },
+    num:{ format:'— 1 —', position:'页脚居中，上下居中', footer:'页脚底端距版心 1.75 厘米', oddEven:'单页码右空一字，双页码左空一字，附件连续编排' },
+    other:{
+      security:'顶格编排在版心左上角、加粗，方正黑体 GBK、小二；「秘密」二字间空一格',
+      sequence:'一级「一、」方正黑体 GBK；二级「（一）」方正楷体 GBK；三级「1.」方正仿宋 GBK；四级「（1）」方正仿宋 GBK（三级、四级右侧不空格）',
+      attach:'正文下空一行、左空两字编排「附件：1.XXXXXXXX」；附件名称后不加标点，回行与上一行附件名称首字对齐',
+      sign:'内部行文署名「******室」；外部行文署名「泰州市纪委监委******室」，一般下空二行，以盖章',
+      stamp:'需盖章时成文日期右空四字，署名在成文日期之上居中，印章端正居中下压署名与日期；无需盖章时署名在正文或附件说明下空二行右空二字',
+      standard:'《党政机关公文格式》GB/T 9704-2012'
+    }
+  },
+  small: {
+    apply:'适用于正式红头文件',
+    page:{ paper:'A4（210 mm × 297 mm）', top:'3.8 cm', bottom:'3.3 cm', left:'2.7 cm', right:'2.7 cm', footer:'1.75 cm' },
+    fonts:{
+      title:{ name:'方正小标宋 GBK', size:'二号', weight:'常规', align:'居中' },
+      h1:   { name:'方正黑体 GBK',  size:'三号', weight:'常规', align:'左对齐' },
+      h2:   { name:'方正楷体 GBK',  size:'三号', weight:'常规', align:'左对齐' },
+      h3:   { name:'方正仿宋 GBK',  size:'三号', weight:'常规', align:'左对齐' },
+      h4:   { name:'方正仿宋 GBK',  size:'三号', weight:'常规', align:'左对齐' },
+      body: { name:'方正仿宋 GBK',  size:'三号', weight:'常规', align:'两端对齐' },
+      west: { name:'仿宋', desc:'西文与文号「泰纪*〔202*〕**号」同用仿宋' },
+      num:  { name:'宋体', size:'四号', weight:'常规', align:'居中' }
+    },
+    para:{ lineHeight:'29.5 磅', charSpacing:'标准', indent:'首行缩进 2 字符', space:'段前段后 0 行', wrap:'允许西文换行' },
+    num:{ format:'— 1 —', position:'页脚居中，上下居中', footer:'页脚底端距版心 1.75 厘米', oddEven:'单页码右空一字，双页码左空一字，附件连续编排' },
+    other:{
+      security:'顶格编排在版心左上角、加粗，方正黑体 GBK、三号；「秘密」二字间空一格',
+      sequence:'一级「一、」方正黑体 GBK；二级「（一）」方正楷体 GBK；三级「1.」方正仿宋 GBK；四级「（1）」方正仿宋 GBK（三级、四级右侧不空格）',
+      attach:'正文下空一行、左空两字编排「附件：1.XXXXXXXX」；附件名称后不加标点，回行与上一行附件名称首字对齐',
+      sign:'内部行文署名「******室」；外部行文署名「泰州市纪委监委******室」，一般下空二行，以盖章',
+      stamp:'需盖章时成文日期右空四字，署名在成文日期之上居中，印章端正居中下压署名与日期；无需盖章时署名在正文或附件说明下空二行右空二字',
+      standard:'《党政机关公文格式》GB/T 9704-2012'
+    }
+  }
+};
+
+const PT_SIZE = { '初号':42,'小初':36,'一号':26,'小一':24,'二号':22,'小二':18,'三号':16,'小三':15,'四号':14,'小四':12 };
+
+let TEMPLATES = [
+  {
+    id:'tpl-001', name:'泰纪呈报稿',
+    source:'呈报稿通用模板.docx', time:'2026-09-25 10:24', rules:26, isDefault:true,
+    spec: JSON.parse(JSON.stringify(PRESETS.large)),
+    desc:'适用于向委领导呈报的请示、报告类材料。'
+  },
+  {
+    id:'tpl-002', name:'泰纪红头文件',
+    source:'红头文件格式.docx', time:'2026-09-23 16:08', rules:26, isDefault:false,
+    spec: JSON.parse(JSON.stringify(PRESETS.small)),
+    desc:'适用于正式红头文件下发。'
+  }
+];
+
+/* ============================================================
+   状态
+   ============================================================ */
+let curStep = 1, curSpec = null;
+let zoom = 0.46, detailSpec = null;
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   视图切换
+   ============================================================ */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-'+name).classList.add('active');
+  $('content').scrollTop = 0;
+  if(name==='list' || name==='review'){
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
+  }
+  // 进入审查视图时同步模板库（新建/删除模板后保持一致）
+  if(name==='review' && typeof renderRevTpls==='function') renderRevTpls();
+  const map = { list:'模板管理', wizard:'新建模板', detail:'模板详情', review:'文档审查' };
+  document.title = (map[name] || '模板管理') + ' · 文档审查助手';
+}
+
+/* ============================================================
+   列表渲染
+   ============================================================ */
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderList(){
+  const list = TEMPLATES.slice();   // 新建时已 unshift，天然按最近更新排序
+
+  const g = $('tplGrid');
+  if(!list.length){
+    g.innerHTML = `<div class="empty">
+      <div class="e-ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></svg></div>
+      <h3>还没有任何模板</h3>
+      <p>上传 DOCX 提取候选值，人工确认后保存可执行规则</p>
+      <button class="btn btn-primary btn-lg" onclick="startWizard()">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建模板
+      </button>
+    </div>`;
+    return;
+  }
+
+  g.innerHTML = list.map(t=>{
+    const f = t.spec.fonts, p = t.spec.page, pa = t.spec.para;
+    return `<article class="tpl-card ${t.isDefault?'is-default':''}">
+      <div class="tpl-hd">
+        <div class="tpl-ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 13.5l1.8 1.8 3.7-3.7"/></svg></div>
+        <div class="tpl-tt">
+          <h3>${esc(t.name)}
+            ${t.isDefault?'<span class="tag tag-green">默认</span>':''}
+          </h3>
+          <div class="sub"><span>${esc(t.source)}</span><i></i><span>${esc(t.time)}</span><i></i><span>${t.rules} 项规则</span></div>
+        </div>
+      </div>
+      <div class="specs">
+        <div class="spec"><div class="spec-k">标题字体</div><div class="spec-v">${esc(f.title.name)} <em>${esc(f.title.size)}</em>${f.title.weight==='加黑'?' <span class="u">加黑</span>':''}</div></div>
+        <div class="spec"><div class="spec-k">正文字体</div><div class="spec-v">${esc(f.body.name)} <em>${esc(f.body.size)}</em>${f.body.weight==='加黑'?' <span class="u">加黑</span>':''}</div></div>
+        <div class="spec"><div class="spec-k">一级标题</div><div class="spec-v">${esc(f.h1.name)} <em>${esc(f.h1.size)}</em></div></div>
+        <div class="spec"><div class="spec-k">二级标题</div><div class="spec-v">${esc(f.h2.name)} <em>${esc(f.h2.size)}</em></div></div>
+        <div class="spec"><div class="spec-k">行距</div><div class="spec-v">${esc(pa.lineHeight)}</div></div>
+        <div class="spec"><div class="spec-k">缩进</div><div class="spec-v">${esc(pa.indent)}</div></div>
+        <div class="spec"><div class="spec-k">页边距</div><div class="spec-v">上${esc(p.top.replace(' cm',''))} 下${esc(p.bottom.replace(' cm',''))} 左${esc(p.left.replace(' cm',''))} 右${esc(p.right.replace(' cm',''))}</div></div>
+        <div class="spec"><div class="spec-k">字符间距</div><div class="spec-v">${esc(pa.charSpacing)}</div></div>
+        <div class="spec"><div class="spec-k">页码格式</div><div class="spec-v">${esc(t.spec.num.format)} <span class="u">${esc(t.spec.num.num || '')}${esc(f.num.name)} ${esc(f.num.size)}</span></div></div>
+        <div class="spec"><div class="spec-k">纸张规格</div><div class="spec-v">${esc(p.paper)}</div></div>
+      </div>
+      <div class="tpl-ft">
+        <div class="meta">${t.isDefault?'已设为默认模板':'未设为默认'}</div>
+        <div class="acts">
+          <button class="btn btn-sm" onclick="openDetail('${t.id}')">查看详情</button>
+          <button class="btn btn-sm btn-primary" onclick="useTemplate('${t.id}')">用于审查</button>
+          <button class="btn btn-sm btn-ghost" onclick="delTemplate('${t.id}')" title="删除">
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+          </button>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+/* ---- 本地持久化（原型演示用，便于刷新后仍保留自建模板） ---- */
+const LS_KEY = 'docReview.templates.v1';
+function saveLS(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(TEMPLATES)); }catch(e){} }
+function loadLS(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr) && arr.length && arr[0].spec && arr[0].spec.fonts){
+      // 兼容旧缓存：模板不再区分大字版/小字版，清掉类型字段与名称后缀
+      arr.forEach(t=>{ delete t.type; if(t.name) t.name = t.name.replace(/（(?:大字版|小字版)）/g,''); });
+      TEMPLATES = arr;
+    }
+  }catch(e){}
+}
+
+function renderStats(){
+  // 侧栏「模板管理」计数徽标
+  $('navTplCount').textContent = TEMPLATES.length;
+}
+
+function useTemplate(id){
+  const t = TEMPLATES.find(x=>x.id===id); if(!t) return;
+  reviewTplId = id;
+  showView('review');
+  renderRevTpls();
+  toast('ok','已选用「'+t.name+'」，请上传待审查的 Word 文档');
+}
+function delTemplate(id){
+  const t = TEMPLATES.find(x=>x.id===id);
+  openModal('删除模板', '将删除模板「'+t.name+'」，删除后不影响已完成的审查记录。是否继续？', ()=>{
+    TEMPLATES = TEMPLATES.filter(x=>x.id!==id);
+    saveLS(); renderList(); renderStats(); closeModal(); toast('ok','模板已删除');
+  });
+}
+
+/* ============================================================
+   详情视图
+   ============================================================ */
+function openDetail(id){
+  const t = TEMPLATES.find(x=>x.id===id);
+  if(!t) return;
+  const s = t.spec, f = s.fonts;
+  $('dName').innerHTML = esc(t.name) + (t.isDefault?' <span class="tag tag-green">默认</span>':'');
+  $('dMeta').textContent = `来源：${t.source} · 创建于 ${t.time} · 共 ${t.rules} 项格式规则 · ${s.apply}`;
+
+  $('dc1').textContent = '6 项';
+  $('dtPage').innerHTML = [
+    ['纸张规格', s.page.paper], ['上边距', s.page.top], ['下边距', s.page.bottom],
+    ['左边距', s.page.left], ['右边距', s.page.right], ['页脚距版心', s.page.footer]
+  ].map(([k,v])=>`<tr><td class="k">${k}</td><td class="v">${esc(v)}</td></tr>`).join('');
+
+  $('dc2').textContent = '8 项';
+  const frows = [
+    ['文件标题', f.title], ['正文', f.body], ['一级标题', f.h1], ['二级标题', f.h2],
+    ['三级标题', f.h3], ['四级标题', f.h4], ['页码', f.num]
+  ];
+  $('dtFont').innerHTML = frows.map(([k,o])=>`<tr>
+      <td class="k">${k}</td>
+      <td class="v"><span class="fontname">${esc(o.name)}</span></td>
+      <td>${esc(o.size)}</td><td>${esc(o.weight)}</td><td>${esc(o.align)}</td>
+    </tr>`).join('') +
+    `<tr><td class="k">西文与文号</td><td class="v" colspan="4"><span class="fontname">${esc(f.west.name)}</span> <span style="color:var(--text-3)">— ${esc(f.west.desc)}</span></td></tr>`;
+
+  $('dc3').textContent = '5 项';
+  $('dtPara').innerHTML = [
+    ['行距', s.para.lineHeight], ['字符间距', s.para.charSpacing], ['首行缩进', s.para.indent],
+    ['段前段后', s.para.space], ['换行规则', s.para.wrap]
+  ].map(([k,v])=>`<tr><td class="k">${k}</td><td class="v">${esc(v)}</td></tr>`).join('');
+
+  $('dc4').textContent = '4 项';
+  $('dtPageNum').innerHTML = [
+    ['页码格式', s.num.format], ['页码位置', s.num.position], ['页脚距离', s.num.footer], ['奇偶规则', s.num.oddEven]
+  ].map(([k,v])=>`<tr><td class="k">${k}</td><td class="v">${esc(v)}</td></tr>`).join('');
+
+  $('dc5').textContent = '6 项';
+  $('dtExtra').innerHTML = [
+    ['秘级标注', s.other.security], ['标题序号', s.other.sequence], ['附件编排', s.other.attach],
+    ['发文机关署名', s.other.sign], ['成文日期与印章', s.other.stamp], ['参考标准', s.other.standard]
+  ].map(([k,v])=>`<tr><td class="k">${k}</td><td class="v" style="font-weight:400;color:var(--text-2)">${esc(v)}</td></tr>`).join('');
+
+  detailSpec = s;
+  renderPaper($('paperDetail'), s);
+  showView('detail');
+}
+
+/* ============================================================
+   纸张预览渲染
+   ============================================================ */
+function renderPaper(el, s){
+  const f = s.fonts;
+  const px = sz => (PT_SIZE[sz] || 16) * 1.3333;
+  const lh = parseFloat(s.para.lineHeight) * 1.3333;
+  /* 1 cm = 37.14 px（按 A4 宽 210mm ↔ 780px 折算），使预览页边距与真实比例一致 */
+  const cm = v => Math.round(parseFloat(v) * 37.143);
+  el.style.padding = `${cm(s.page.top)}px ${cm(s.page.right)}px ${cm(s.page.bottom)}px ${cm(s.page.left)}px`;
+  el.innerHTML = `
+    <div class="p-title" style="font-family:'${f.title.name}',serif;font-size:${px(f.title.size)}px;font-weight:${f.title.weight==='加黑'?700:400};line-height:1.35">关于XX工作情况的报告</div>
+    <div class="p-sub" style="font-family:'${f.body.name}',serif">泰州市纪委监委办公室　泰纪呈〔2026〕18 号</div>
+    <p style="font-family:'${f.body.name}',serif;font-size:${px(f.body.size)}px;font-weight:${f.body.weight==='加黑'?700:400};line-height:${lh}px;letter-spacing:${s.para.charSpacing.includes('0.4')?'0.53px':'normal'}">根据上级部署要求，现将有关工作情况报告如下。</p>
+    <div class="p-h1" style="font-family:'${f.h1.name}',serif;font-size:${px(f.h1.size)}px;font-weight:${f.h1.weight==='加黑'?700:400};line-height:${lh}px">一、基本情况</div>
+    <p style="font-family:'${f.body.name}',serif;font-size:${px(f.body.size)}px;font-weight:${f.body.weight==='加黑'?700:400};line-height:${lh}px;letter-spacing:${s.para.charSpacing.includes('0.4')?'0.53px':'normal'}">本季度累计办理各类事项若干件，各项任务均按期完成，整体运行平稳有序。</p>
+    <div class="p-h2" style="font-family:'${f.h2.name}',serif;font-size:${px(f.h2.size)}px;font-weight:${f.h2.weight==='加黑'?700:400};line-height:${lh}px">（一）重点工作推进</div>
+    <p style="font-family:'${f.body.name}',serif;font-size:${px(f.body.size)}px;font-weight:${f.body.weight==='加黑'?700:400};line-height:${lh}px;letter-spacing:${s.para.charSpacing.includes('0.4')?'0.53px':'normal'}">围绕重点环节细化举措，明确责任分工，稳步推进各项任务落地见效。</p>
+    <div style="text-align:center;font-family:'${f.num.name}',serif;font-size:${px(f.num.size)}px;color:#333;margin-top:26px">— 1 —</div>
+  `;
+  el.style.zoom = zoom;
+}
+
+/* ============================================================
+   向导
+   ============================================================ */
+function startWizard(){
+  curStep = 1; curSpec = null;
+  clearFile();
+  $('tplName').value = ''; $('tplDesc').value = '';
+  gotoStep(1);
+  showView('wizard');
+}
+
+function exitWizard(){ curSpec = null; gotoStep(1); showView('list'); }
+
+function gotoStep(n){
+  if(n < 1 || n > 4) return;
+  curStep = n;
+  [1,2,3,4].forEach(i=>{
+    const s = $('step'+i);
+    s.classList.toggle('on', i===n);
+    s.classList.toggle('done', i<n);
+  });
+  [1,2,3,4].forEach(i=>$('pane'+i).classList.toggle('on', i===n));
+
+  const next = $('wzNext'), prev = $('wzPrev'), hint = $('wzHint');
+  prev.style.display = n===1 ? 'none' : 'inline-flex';
+  hint.textContent = '';
+  if(n===1){
+    next.textContent = '开始解析属性'; next.disabled = !$('upFile').classList.contains('on'); next.onclick = wzNext;
+    $('wzCancel').style.display = 'inline-flex';
+  } else if(n===2){
+    next.textContent = '解析中…'; next.disabled = true;
+    $('wzCancel').style.display = 'none';
+  } else if(n===3){
+    next.textContent = '确认无误，下一步'; next.disabled = false; next.onclick = ()=>{ buildSummary(); gotoStep(4); };
+    $('wzCancel').style.display = 'inline-flex';
+  } else {
+    next.textContent = '保存模板'; next.disabled = false; next.onclick = saveTemplate;
+    $('wzCancel').style.display = 'inline-flex';
+  }
+}
+
+function wzNext(){
+  if(curStep === 1){
+    if(!$('upFile').classList.contains('on') && !curSpec){ toast('err','请先上传一份标准文档'); return; }
+    curSpec = curSpec || parsedSpec();
+    gotoStep(2); runScan();
+  }
+}
+
+/* 原型中以《常用公文格式》标准参数模拟"解析结果"：
+   解析出来的是这份上传文档自己的格式要求，与列表里的既有模板互不隶属 */
+function parsedSpec(){
+  return JSON.parse(JSON.stringify(PRESETS.large));
+}
+
+/* ---------- 上传交互 ---------- */
+const dz = $('dropzone'), fi = $('fileInput');
+dz.addEventListener('click', ()=>fi.click());
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fi.addEventListener('change', e=>{ if(e.target.files.length) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  const ok = /\.(docx?)$/i.test(file.name);
+  if(!ok){ toast('err','当前仅支持 .docx 格式'); return; }
+  $('upName').textContent = file.name;
+  const kb = Math.max(1, Math.round(file.size/1024));
+  $('upSize').textContent = (kb > 1024 ? (kb/1024).toFixed(1)+' MB' : kb+' KB') + ' · 已就绪';
+  $('upFile').classList.add('on');
+  curSpec = null;
+  updateStep1Btn();
+  toast('ok','文件已就绪，可开始解析');
+}
+function clearFile(){
+  fi.value = ''; $('upFile').classList.remove('on'); curSpec = null;
+  $('upName').textContent = ''; $('upSize').textContent = '';
+  if($('wzNext')) updateStep1Btn();
+}
+
+function updateStep1Btn(){
+  if(curStep !== 1) return;
+  $('wzNext').disabled = !($('upFile').classList.contains('on') || curSpec);
+}
+
+/* ---------- Step2 解析动画 ---------- */
+const SCAN_STEPS = [
+  ['读取文档结构', '解析段落与样式表', 900],
+  ['提取页面设置', '纸张 / 页边距 / 页脚距离', 2100],
+  ['识别字体字号', '标题 / 正文 / 各级标题', 3600],
+  ['分析段落格式', '行距 / 缩进 / 字符间距', 5000],
+  ['判定标题层级序号', '一、／（一）／1.／（1）', 6200],
+  ['提取页码规范', '格式 / 位置 / 奇偶规则', 7200],
+  ['匹配公文规范库', 'GB/T 9704-2012', 8300]
+];
+
+function runScan(){
+  const list = $('scanList'), ring = $('ringFg');
+  list.innerHTML = SCAN_STEPS.map((s,i)=>`
+    <div class="scan-item" id="si${i}">
+      <div class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="tx"><b>${s[0]}</b><span>${s[1]}</span></div>
+      <div class="rt">—</div>
+    </div>`).join('');
+  const C = 458.7;
+  let p = 0;
+  const t0 = Date.now();
+  const timer = setInterval(()=>{
+    p = Math.min(100, p + (p < 88 ? 3.4 : 1.1) + Math.random()*1.6);
+    ring.style.strokeDashoffset = C * (1 - p/100);
+    $('scanPct').textContent = Math.round(p) + '%';
+    SCAN_STEPS.forEach((s,i)=>{
+      if(p >= (i+1)/SCAN_STEPS.length*100 - 4){
+        const el = $('si'+i);
+        if(el && !el.classList.contains('on')){
+          el.classList.add('on');
+          el.querySelector('.rt').textContent = ((Date.now()-t0)/1000).toFixed(1) + 's';
+        }
+      }
+    });
+    if(p >= 100){
+      clearInterval(timer);
+      ring.style.strokeDashoffset = 0;
+      $('scanPct').textContent = '100%';
+      setTimeout(()=>{ if(curStep===2){ buildResult(); gotoStep(3); } }, 520);
+    }
+  }, 78);
+}
+
+/* ---------- Step3 结果渲染 ---------- */
+const CONF = () => 92 + Math.floor(Math.random()*8);
+
+function buildResult(){
+  const s = curSpec;
+  const groups = [
+    { title:'页面设置', icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>', rows:[
+      ['纸张规格', s.page.paper], ['上边距', s.page.top], ['下边距', s.page.bottom],
+      ['左边距', s.page.left], ['右边距', s.page.right], ['页脚距版心', s.page.footer]
+    ]},
+    { title:'字体与字号', icon:'<path d="M4 7V5h16v2"/><path d="M9 20h6"/><path d="M12 5v15"/>', rows:[
+      ['文件标题', `${s.fonts.title.name} · ${s.fonts.title.size} · ${s.fonts.title.weight}`],
+      ['正文', `${s.fonts.body.name} · ${s.fonts.body.size} · ${s.fonts.body.weight}`],
+      ['一级标题', `${s.fonts.h1.name} · ${s.fonts.h1.size} · ${s.fonts.h1.weight}`],
+      ['二级标题', `${s.fonts.h2.name} · ${s.fonts.h2.size} · ${s.fonts.h2.weight}`],
+      ['三级标题', `${s.fonts.h3.name} · ${s.fonts.h3.size} · ${s.fonts.h3.weight}`],
+      ['四级标题', `${s.fonts.h4.name} · ${s.fonts.h4.size} · ${s.fonts.h4.weight}`],
+      ['西文/文号', s.fonts.west.name + '（' + s.fonts.west.desc + '）'],
+      ['页码', `${s.fonts.num.name} · ${s.fonts.num.size}`]
+    ]},
+    { title:'段落格式', icon:'<path d="M4 6h16M4 12h16M4 18h10"/>', rows:[
+      ['行距', s.para.lineHeight], ['字符间距', s.para.charSpacing], ['首行缩进', s.para.indent],
+      ['段前段后', s.para.space], ['换行规则', s.para.wrap]
+    ]},
+    { title:'页码与版式', icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 17h8"/>', rows:[
+      ['页码格式', s.num.format], ['页码位置', s.num.position], ['页脚距离', s.num.footer], ['奇偶规则', s.num.oddEven]
+    ]},
+    { title:'其他规范要求', icon:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>', rows:[
+      ['秘级标注', s.other.security], ['标题序号层级', s.other.sequence], ['附件编排', s.other.attach],
+      ['发文机关署名', s.other.sign], ['成文日期与印章', s.other.stamp], ['参考标准', s.other.standard]
+    ]}
+  ];
+
+  let total = 0;
+  $('fmtGroups').innerHTML = groups.map((g,gi)=>{
+    total += g.rows.length;
+    return `<div class="fmt-group">
+      <div class="fg-hd">
+        <svg viewBox="0 0 24 24">${g.icon}</svg><b>${g.title}</b>
+        <span class="cnt">${g.rows.length} 项</span>
+      </div>
+      <div class="fmt-rows">
+        ${g.rows.map((r,ri)=>{
+          const c = CONF();
+          return `<div class="fmt-row">
+            <label>${r[0]}</label>
+            <input class="fv" value="${esc(r[1])}" title="${esc(r[1])}">
+            <span class="conf ${c<94?'mid':''}">AI ${c}%</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  $('resultDesc').textContent = `共识别 ${total} 项格式规则，点击任意值可直接修正；带百分比的为 AI 识别置信度。`;
+  curSpec.rules = total;
+  bindFvInputs();
+}
+
+function bindFvInputs(){
+  document.querySelectorAll('#fmtGroups .fv').forEach(inp=>{
+    inp.addEventListener('focus', ()=>{ inp.title = inp.value; });
+    inp.addEventListener('input', ()=>{
+      const c = inp.parentElement.querySelector('.conf');
+      if(c){ c.className = 'conf mid'; c.textContent = '已手动修正'; }
+    });
+    inp.addEventListener('blur', ()=>{ inp.title = inp.value; });
+  });
+}
+
+/* ---------- Step4 摘要与保存 ---------- */
+function buildSummary(){
+  const s = curSpec;
+  if(!$('tplName').value || !$('tplName').value.trim()){
+    const src = ($('upName').textContent || '').trim();
+    $('tplName').value = src ? src.replace(/\.(docx?|DOCX?)$/,'') : '';
+  }
+  $('saveSummary').innerHTML = [
+    ['适用范围', s.apply],
+    ['标题字体', s.fonts.title.name + ' ' + s.fonts.title.size],
+    ['正文字体', s.fonts.body.name + ' ' + s.fonts.body.size],
+    ['行距', s.para.lineHeight],
+    ['首行缩进', s.para.indent],
+    ['页边距', `上${s.page.top.replace(' cm','')} 下${s.page.bottom.replace(' cm','')} 左${s.page.left.replace(' cm','')} 右${s.page.right.replace(' cm','')}`],
+    ['页码格式', s.num.format + ' · ' + s.fonts.num.name + ' ' + s.fonts.num.size],
+    ['规则数量', curSpec.rules + ' 项']
+  ].map(([k,v])=>`<div class="mini-row"><span class="mk">${k}</span><span class="mv">${esc(v)}</span></div>`).join('');
+}
+
+function saveTemplate(){
+  const name = ($('tplName').value || '').trim();
+  if(!name){ toast('err','请填写模板名称'); $('tplName').focus(); return; }
+  const isDefault = $('defaultSw').classList.contains('on');
+  if(isDefault) TEMPLATES.forEach(t=>t.isDefault=false);
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const time = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  TEMPLATES.unshift({
+    id:'tpl-' + Date.now(), name,
+    source: $('upName').textContent || '未命名文档.docx',
+    time, rules: curSpec.rules || 26, isDefault,
+    desc: $('tplDesc').value.trim(),
+    spec: JSON.parse(JSON.stringify(curSpec))
+  });
+
+  saveLS();
+  renderList(); renderStats();
+  showView('list');
+  toast('ok','模板「' + name + '」已保存');
+  curSpec = null;
+}
+
+/* 缩放（仅模板详情页预览） */
+function setZoom(z){
+  zoom = z;
+  document.querySelectorAll('#zoomSeg2 button').forEach(b=>b.classList.toggle('on', parseFloat(b.dataset.z) === z));
+  if(detailSpec) renderPaper($('paperDetail'), detailSpec);
+}
+function bindZoom(segId){
+  $(segId).querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>setZoom(parseFloat(b.dataset.z)));
+  });
+}
+bindZoom('zoomSeg2');
+
+/* 侧栏导航 */
+document.querySelectorAll('.nav-item').forEach(n=>{
+  n.addEventListener('click', ()=>{
+    const v = n.dataset.nav;
+    if(v) showView(v);
+  });
+});
+
+/* 本系统为单一浅色主题，不再支持深浅色切换 */
+
+/* ============================================================
+   Toast & Modal
+   ============================================================ */
+const ICONS = {
+  ok:'<path d="M20 6L9 17l-5-5"/>',
+  err:'<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>'
+};
+function toast(type, msg){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `<svg viewBox="0 0 24 24">${ICONS[type]||ICONS.info}</svg><span>${esc(msg)}</span>`;
+  $('toastWrap').appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 260); }, 2300);
+}
+
+let modalOk = null;
+function openModal(title, body, onOk){
+  $('mdTitle').textContent = title; $('mdBody').textContent = body;
+  modalOk = onOk; $('modalMask').classList.add('on');
+}
+function closeModal(){ $('modalMask').classList.remove('on'); modalOk = null; }
+$('mdOk').addEventListener('click', ()=>{ if(modalOk) modalOk(); });
+$('modalMask').addEventListener('click', e=>{ if(e.target === $('modalMask')) closeModal(); });
+
+/* ============================================================
+   初始化
+   ============================================================ */
+loadLS();
+renderList();
+renderStats();
+gotoStep(1);
+/* ============================================================
+   文档审查模块（模块二）
+   ============================================================ */
+let reviewText = '', reviewTplId = null, reviewReport = null;
+
+/* 错别字词典：错词 -> 正词（原型演示用，覆盖常见公文错写） */
+const GO_WORDS = {
+  '存再':'存在','布署':'部署','作度':'态度','认织':'认识','重要姓':'重要性',
+  '杜决':'杜绝','单们':'单位','按排':'安排','对帐':'对账','台帐':'台账',
+  '在次':'再次','连系':'联系','好象':'好像','帐目':'账目','学藉':'学籍',
+  '对像':'对象','年令':'年龄','既将':'即将','他门':'他们','做为一个':'作为一个'
+};
+
+/* —— 模板选择 —— */
+function renderRevTpls(){
+  if(!TEMPLATES.some(t=>t.id===reviewTplId)) reviewTplId = TEMPLATES[0] ? TEMPLATES[0].id : null;
+  $('revTpls').innerHTML = TEMPLATES.map(t=>`
+    <div class="rev-tpl ${t.id===reviewTplId?'on':''}" onclick="selectRevTpl('${t.id}')">
+      <div class="rt-ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 13.5l1.8 1.8 3.7-3.7"/></svg></div>
+      <div class="rt-main">
+        <div class="rt-name">${esc(t.name)}</div>
+        <div class="rt-desc">${esc(t.desc||'')}</div>
+        <div class="rt-meta">${esc(t.source)} · ${t.rules} 项规则</div>
+      </div>
+      <div class="rt-check"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+    </div>`).join('');
+}
+function selectRevTpl(id){ reviewTplId = id; renderRevTpls(); }
+
+/* —— 文档输入 —— */
+function hideRevFileBar(){
+  const bar = $('revFileBar');
+  if(bar){ bar.hidden = true; bar.innerHTML = ''; }
+}
+function showRevFileBar(name, size, len, rough){
+  const bar = $('revFileBar'); if(!bar) return;
+  const kb = size >= 1024 ? (size/1024).toFixed(1)+' KB' : (size||0)+' B';
+  bar.innerHTML = `
+    <div class="fb-ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+    <div class="fb-main">
+      <div class="fb-name">${esc(name)}</div>
+      <div class="fb-meta">${kb} · 已解析正文 ${len} 字${rough?' · 旧版 .doc 为兼容提取，建议另存为 .docx 后复核':''}</div>
+    </div>
+    <button class="fb-x" type="button" onclick="clearRevFile()">移除</button>`;
+  bar.hidden = false;
+}
+function clearRevFile(){
+  reviewText = '';
+  hideRevFileBar();
+  const fi = $('revFile'); if(fi) fi.value = '';
+  toast('info','已移除待审查文档');
+}
+
+/* —— 错别字检测 —— */
+function detectBadWords(text){
+  const escHtml = s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  let html = escHtml(text);
+  const raw = [];
+  for(const [bad,good] of Object.entries(GO_WORDS)){
+    if(text.indexOf(bad)===-1) continue;
+    html = html.split(escHtml(bad)).join(`<mark class="bad-word" title="建议改为：${escHtml(good)}">${escHtml(bad)}</mark>`);
+    let i = text.indexOf(bad);
+    while(i!==-1){
+      const ctx = text.slice(Math.max(0,i-10), i+bad.length+10).replace(/\s+/g,' ');
+      raw.push({ bad, good, ctx });
+      i = text.indexOf(bad, i+bad.length);
+    }
+  }
+  return { html, raw };
+}
+
+/* —— 正文段落判定：标题 / 主送机关 / 落款 / 日期不要求首行缩进 —— */
+function bodyParaFlags(lines){
+  const idx = lines.map((l,i)=>({l,i})).filter(x=>x.l.trim()).map(x=>x.i);
+  const first = idx.length ? idx[0] : -1, last = idx.length ? idx[idx.length-1] : -1;
+  return lines.map((raw,i)=>{
+    const t = raw.trim();
+    if(!t) return false;
+    if(i === first) return false;                              // 首行＝标题
+    if(i === last && t.length <= 24) return false;             // 末行＝落款署名
+    if(t.length < 24) return false;                            // 短行（机关名、小标题等）
+    if(/[：:]$/.test(t) && t.length <= 20) return false;       // 主送机关
+    if(/^附件[:：]/.test(t)) return false;                     // 附件说明
+    if(/年.*月.*日/.test(t)) return false;                     // 成文日期
+    return true;
+  });
+}
+/* 返回「未首行缩进」的行号数组（与格式核对清单共用同一判定，保证数字与批注一致） */
+function indentIssues(text){
+  const lines = text.split('\n'), flags = bodyParaFlags(lines), bad = [];
+  lines.forEach((l,i)=>{ if(flags[i] && !(l.startsWith('　　')||l.startsWith('  '))) bad.push(i); });
+  return bad;
+}
+/* —— 统一文档批注：错别字（红）+ 格式问题（黄）全部内联标注，保持原文格式 —— */
+function annotateDoc(text, indentBad, bad){
+  const indent = new Set(indentBad);
+  const half = { ',':'，','!':'！','?':'？','.':'。' };
+  return bad.html.split('\n').map((raw,i)=>{
+    let h = raw.replace(/([一-龥])([,!?.])/g, (m,p1,p2)=> p1 + `<mark class="fmt-punct" title="格式问题：中文后应接全角标点（${p2} → ${half[p2]}）">${p2}</mark>`);
+    const isIndent = indent.has(i);
+    const cls = 'al' + (isIndent ? ' fmt-indent' : '');
+    const tag = isIndent ? ' <mark class="fmt-tag" title="格式问题：该正文段落未首行缩进，建议缩进 2 个字符">⚠ 缺少首行缩进</mark>' : '';
+    return `<div class="${cls}">${h}${tag}</div>`;
+  }).join('');
+}
+
+/* —— 格式规范核对（基于所选模板 spec，可自动判定的做真判定） —— */
+function buildFormatRules(text, spec, indentBad){
+  // 首行缩进
+  const noIndent = indentBad.length;
+  // 半角标点（中文后紧跟半角 ,.!?）
+  const halfPunct = (text.match(/[一-龥][,!?.]/g)||[]).length;
+  // 落款/日期
+  const hasSign = /室/.test(text) && /年.*月.*日/.test(text);
+  // 附件
+  const hasAttach = /附件：/.test(text);
+  // 层级标题
+  const hasLevel = /(一、|（一）|1\.|（1）)/.test(text);
+
+  const rules = [
+    { name:'纸张与页边距', req:`${spec.page.paper}；上${spec.page.top}/下${spec.page.bottom}/左${spec.page.left}/右${spec.page.right}`, status:'need', note:'需在 Word 中核对页面设置' },
+    { name:'标题字体字号', req:`${spec.fonts.title.name} ${spec.fonts.title.size}${spec.fonts.title.weight==='加黑'?' 加黑':''}`, status:'need', note:'需在 Word 中核对' },
+    { name:'正文字体字号', req:`${spec.fonts.body.name} ${spec.fonts.body.size}${spec.fonts.body.weight==='加黑'?' 加黑':''}`, status:'need', note:'需在 Word 中核对' },
+    { name:'行距与字符间距', req:`行距 ${spec.para.lineHeight}；字符间距 ${spec.para.charSpacing}`, status:'need', note:'需在 Word 中核对' },
+    { name:'首行缩进', req:spec.para.indent, status: noIndent===0?'pass':'fail', note: noIndent? (noIndent+' 个正文段落未首行缩进') : '全部正文段落已缩进' },
+    { name:'中文标点全角', req:'中文语境使用全角标点（，。！？）', status: halfPunct===0?'pass':'fail', note: halfPunct? (halfPunct+' 处半角标点') : '未发现半角标点' },
+    { name:'落款与成文日期', req:'署名 + 成文日期（年 月 日）', status: hasSign?'pass':'fail', note: hasSign?'已检测到落款与日期':'缺少落款或日期' },
+    { name:'标题序号层级', req:'一级「一、」二级「（一）」三级「1.」四级「（1）」', status: hasLevel?'pass':'need', note: hasLevel?'已检测到层级标题':'未检测到层级标题，需核对' }
+  ];
+  if(spec.other && spec.other.attach){
+    rules.push({ name:'附件标注', req:'正文下空一行「附件：1.……」', status: hasAttach?'pass':'need', note: hasAttach?'已标注附件':'未标注附件，需核对' });
+  }
+  // 问题优先：不符 → 待核 → 符合
+  const rank = { fail:0, need:1, pass:2 };
+  rules.sort((a,b)=>rank[a.status]-rank[b.status]);
+  return rules;
+}
+
+/* —— 主流程 —— */
+function runReview(){
+  if(!reviewText.trim()){ toast('err','请先上传待审查的 Word 文档（.docx）'); return; }
+  if(!reviewTplId){ toast('err','请选择标准模板'); return; }
+  const tpl = TEMPLATES.find(t=>t.id===reviewTplId);
+  const spec = tpl.spec;
+
+  const bad = detectBadWords(reviewText);
+  const indentBad = indentIssues(reviewText);
+  const rules = buildFormatRules(reviewText, spec, indentBad);
+  const failN = rules.filter(r=>r.status==='fail').length;
+  const needN = rules.filter(r=>r.status==='need').length;
+  const passN = rules.filter(r=>r.status==='pass').length;
+  const badCount = bad.raw.length;
+
+  // 错别字聚合
+  const agg = {};
+  bad.raw.forEach(r=>{ (agg[r.bad] = agg[r.bad] || {good:r.good,count:0,ctx:r.ctx}).count++; });
+  const uniq = Object.keys(agg).map(k=>({bad:k, good:agg[k].good, count:agg[k].count, ctx:agg[k].ctx}));
+
+  const halfP = (reviewText.match(/[一-龥][,!?.]/g)||[]).length;
+  const fmtIssues = indentBad.length + halfP;
+
+  reviewReport = { tpl, bad, rules, failN, needN, passN, badCount, uniq, indentBad, halfP, fmtIssues, docHtml:annotateDoc(reviewText, indentBad, bad) };
+  renderReview();
+  toast('ok','审查完成');
+}
+
+function renderReview(){
+  const r = reviewReport; if(!r) return;
+  const total = r.badCount + r.fmtIssues;
+
+  // 顶部：错误摘要 + 一键修复并下载（置顶）
+  const summary = total===0
+    ? '<span class="rv-badge pass">未发现错误</span>'
+    : `<span class="rv-summary"><b class="t-bad">错别字 ${r.badCount} 处</b><span class="dot">·</span><b class="t-fmt">格式问题 ${r.fmtIssues} 处</b></span>`;
+
+  const topbar = `
+    <div class="rv-topbar">
+      ${summary}
+      <div class="rv-topbar-right">
+        <button class="btn btn-primary" onclick="fixAndDownload()">
+          <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+          一键修复并下载
+        </button>
+      </div>
+    </div>`;
+
+  // 文档主体：保持原文格式，错误内联标注
+  const clean = `<div class="rv-ok"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>未发现错别字与格式问题，文档符合所选模板「${esc(r.tpl.name)}」规范</div>`;
+  const docSheet = total
+    ? `<div class="doc-sheet"><div class="annot">${r.docHtml}</div></div>`
+    : clean;
+  const cap = `<div class="doc-cap">标准模板：<b>${esc(r.tpl.name)}</b> · 错误已在文中直接标注，<span style="color:var(--danger)">红色＝错别字</span>、<span style="color:var(--warn)">黄色＝格式问题</span></div>`;
+
+  const legend = total ? `
+    <div class="rv-legend">
+      <span class="lg"><i class="sw sw-bad"></i>错别字（红标，悬停查看建议用词）</span>
+      <span class="lg"><i class="sw sw-fmt"></i>格式问题（黄标：首行缩进 / 中文标点）</span>
+    </div>` : '';
+
+  const wordHint = r.needN ? `
+    <div class="rv-hint">
+      <svg viewBox="0 0 24 24"><path d="M12 9v5"/><circle cx="12" cy="17.4" r=".7" fill="currentColor" stroke="none"/><path d="M10.3 3.9L2.6 17.2A2 2 0 0 0 4.3 20.2h15.4a2 2 0 0 0 1.7-3l-7.7-13.3a2 2 0 0 0-3.4 0z"/></svg>
+      <span>另有 ${r.needN} 项需在 Word 中核对（纸张页边距 / 字体字号 / 行距字符间距 / 页码等），文本层无法判定，未计入修正项</span>
+    </div>` : '';
+
+  $('revResult').innerHTML = topbar + (total ? cap : '') + docSheet + legend + wordHint;
+}
+
+/* —— 一键修复并下载 —— */
+/* —— 文本级修复：保留原文档段落缩进结构，只修错别字与中文后的半角标点 —— */
+function applyDocxFmt(text){
+  let t = text;
+  for(const [bad,good] of Object.entries(GO_WORDS)){
+    if(t.indexOf(bad)!==-1) t = t.split(bad).join(good);
+  }
+  const pm = { ',':'，','!':'！','?':'？','.':'。' };
+  t = t.replace(/([一-龥])[,!?.]/g, (m,p1,p2)=> p1 + pm[p2]);
+  return t.replace(/\n{3,}/g,'\n\n');
+}
+
+/* —— 字号 / 页边距换算（用于按标准模板输出 .docx）—— */
+const CN_SIZE = { '初号':42,'小初':36,'一号':26,'小一':24,'二号':22,'小二':18,'三号':16,'小三':15,'四号':14,'小四':12,'五号':10.5,'小五':9 };
+function sizeHalfPt(s){
+  const m = String(s||'').match(/([0-9]+(?:\.[0-9]+)?)\s*磅/);
+  if(m) return Math.round(parseFloat(m[1])*2);
+  if(CN_SIZE[s]) return CN_SIZE[s]*2;
+  return 36;
+}
+function cmToTwip(s){ const v = parseFloat(String(s||'')); return v ? Math.round(v*567) : 0; }
+
+/* —— 极简 ZIP 容器（仅存储、不压缩，满足 .docx 规范）—— */
+function crc32(u8){
+  let c, tbl = crc32._t || (crc32._t = (()=>{ const t=[]; for(let n=0;n<256;n++){ c=n; for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; } return t; })());
+  let crc = 0xFFFFFFFF;
+  for(let i=0;i<u8.length;i++) crc = (crc>>>8) ^ tbl[(crc ^ u8[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function u8cat(parts){ let n=0; parts.forEach(p=>n+=p.length); const o=new Uint8Array(n); let p=0; parts.forEach(q=>{ o.set(q,p); p+=q.length; }); return o; }
+function zipLH(name, crc, size){
+  const b = new Uint8Array(30+name.length), dv = new DataView(b.buffer);
+  dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true); dv.setUint16(6,0,true); dv.setUint16(8,0,true);
+  dv.setUint16(10,0,true); dv.setUint16(12,0,true); dv.setUint32(14,crc,true); dv.setUint32(18,size,true);
+  dv.setUint32(22,size,true); dv.setUint16(26,name.length,true); dv.setUint16(28,0,true);
+  b.set(name,30); return b;
+}
+function zipCD(name, crc, size, off){
+  const b = new Uint8Array(46+name.length), dv = new DataView(b.buffer);
+  dv.setUint32(0,0x02014b50,true); dv.setUint16(4,20,true); dv.setUint16(6,20,true); dv.setUint16(8,0,true);
+  dv.setUint16(10,0,true); dv.setUint16(12,0,true); dv.setUint16(14,0,true); dv.setUint32(16,crc,true);
+  dv.setUint32(20,size,true); dv.setUint32(24,size,true); dv.setUint16(28,name.length,true);
+  dv.setUint16(30,0,true); dv.setUint16(32,0,true); dv.setUint16(34,0,true); dv.setUint16(36,0,true);
+  dv.setUint32(42,off,true); b.set(name,46); return b;
+}
+function zipEOCD(n, cdsize, off){
+  const b = new Uint8Array(22), dv = new DataView(b.buffer);
+  dv.setUint32(0,0x06054b50,true); dv.setUint16(4,0,true); dv.setUint16(6,0,true);
+  dv.setUint16(8,n,true); dv.setUint16(10,n,true); dv.setUint32(12,cdsize,true); dv.setUint32(16,off,true); dv.setUint16(20,0,true);
+  return b;
+}
+function makeZip(files){
+  const enc = new TextEncoder(), lhs=[], cds=[]; let off=0;
+  for(const f of files){
+    const name = enc.encode(f.name);
+    const data = f.data instanceof Uint8Array ? f.data : enc.encode(f.data);
+    const crc = crc32(data), size = data.length;
+    const lh = zipLH(name, crc, size); lhs.push(lh, data);
+    cds.push(zipCD(name, crc, size, off)); off += lh.length + size;
+  }
+  const cd = u8cat(cds);
+  return new Blob([u8cat(lhs), cd, zipEOCD(files.length, cd.length, off)],
+    { type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+}
+
+/* —— 一键修复：按标准模板修复后输出 .docx —— */
+function escXml(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function buildFixedDocx(){
+  const spec = reviewReport.tpl.spec, f = spec.fonts, p = spec.page, pa = spec.para;
+  const fontName = (f.body && f.body.name) || '仿宋';
+  const half = sizeHalfPt(f.body && f.body.size);
+  const firstLine = Math.round((half/2) * 40);                 // 首行缩进 2 字符 ≈ 2×字号
+  const lh = pa.lineHeight ? Math.round(parseFloat(pa.lineHeight)*20) : 0;
+
+  // 段落：修错别字与中文后标点，并按审查结论补齐正文段落的 2 字符首行缩进
+  const fixedLines = applyDocxFmt(reviewText).split('\n').map(l => l.replace(/\t/g,''));
+  const needIndent = bodyParaFlags(fixedLines);   // 与「格式规范核对」同一判定
+  const paras = fixedLines
+    .map((l, i) => ({
+      text: l,
+      indent: needIndent[i] || l.startsWith('　　') || l.startsWith('  ')
+    }))
+    .filter(x => x.text.trim().length)
+    .map(x => {
+      const content = (x.text.startsWith('　　') || x.text.startsWith('  ')) ? x.text.slice(2) : x.text;
+      const pPr = x.indent ? `<w:pPr><w:ind w:firstLine="${firstLine}"/></w:pPr>` : '';
+      return `<w:p>${pPr}<w:r><w:t xml:space="preserve">${escXml(content)}</w:t></w:r></w:p>`;
+    }).join('');
+
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const PKG = 'http://schemas.openxmlformats.org/package/2006/relationships';
+  const CT = 'http://schemas.openxmlformats.org/package/2006/content-types';
+
+  const sectPr = `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>`+
+    `<w:pgMar w:top="${cmToTwip(p.top)}" w:right="${cmToTwip(p.right)}" w:bottom="${cmToTwip(p.bottom)}" w:left="${cmToTwip(p.left)}" w:header="${cmToTwip(p.footer)}" w:footer="${cmToTwip(p.footer)}" w:gutter="0"/></w:sectPr>`;
+
+  const documentXml =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="${W}"><w:body>${paras}${sectPr}</w:body></w:document>`;
+
+  const stylesXml =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="${W}"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${fontName}" w:eastAsia="${fontName}" w:hAnsi="${fontName}"/><w:sz w:val="${half}"/><w:szCs w:val="${half}"/></w:rPr></w:rPrDefault>`+
+(lh?`<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="${lh}" w:lineRule="atLeast"/></w:pPr></w:pPrDefault>`:'')+
+`</w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+
+  const contentTypes =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="${CT}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`;
+
+  const rels =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${PKG}/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="${PKG}/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="${PKG}/extended-properties" Target="docProps/app.xml"/></Relationships>`;
+
+  const docRels =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="${PKG}"><Relationship Id="rId1" Type="${R}/styles" Target="styles.xml"/></Relationships>`;
+
+  const core =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>审查修复_${escXml(reviewReport.tpl.name)}</dc:title><dc:creator>文档审查助手</dc:creator></cp:coreProperties>`;
+
+  const app =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>文档审查助手</Application></Properties>`;
+
+  return makeZip([
+    { name:'[Content_Types].xml', data:contentTypes },
+    { name:'_rels/.rels', data:rels },
+    { name:'word/document.xml', data:documentXml },
+    { name:'word/_rels/document.xml.rels', data:docRels },
+    { name:'word/styles.xml', data:stylesXml },
+    { name:'docProps/core.xml', data:core },
+    { name:'docProps/app.xml', data:app }
+  ]);
+}
+function fixAndDownload(){
+  if(!reviewReport){ toast('err','请先完成审查'); return; }
+  const blob = buildFixedDocx();
+  const fname = `审查修复_${reviewReport.tpl.name}.docx`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
+  toast('ok','已按标准模板修复并生成 .docx 下载文件');
+}
+
+/* ============================================================
+   Word 文档解析（仅 .doc / .docx，零依赖）
+   .docx → ZIP 容器，取 word/document.xml 提取段落正文
+   .doc  → OLE 复合文档，读 WordDocument 流按 FIB 定位正文；
+           若为复杂格式/RTF/文本容器则降级处理
+   ============================================================ */
+const WORD_RE = /\.docx?$/i;
+const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+function bytesToText(u8, enc){
+  try{ return new TextDecoder(enc).decode(u8); }
+  catch(e){ return new TextDecoder('utf-8').decode(u8); }
+}
+
+/* —— ZIP：按中央目录定位条目并解压 —— */
+async function readZipEntryText(buf, target){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let eocd = -1;
+  for(let i = u8.length - 22; i >= 0 && i >= u8.length - 22 - 65535; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error('文件不是有效的 .docx（ZIP）结构');
+  let off = dv.getUint32(eocd + 16, true);
+  const total = dv.getUint16(eocd + 10, true);
+  for(let n = 0; n < total; n++){
+    if(dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize  = dv.getUint32(off + 20, true);
+    const nLen   = dv.getUint16(off + 28, true);
+    const eLen   = dv.getUint16(off + 30, true);
+    const cLen   = dv.getUint16(off + 32, true);
+    const lho    = dv.getUint32(off + 42, true);
+    const name   = new TextDecoder('utf-8').decode(u8.subarray(off + 46, off + 46 + nLen));
+    if(name === target){
+      const lNL = dv.getUint16(lho + 26, true), lEL = dv.getUint16(lho + 28, true);
+      const start = lho + 30 + lNL + lEL;
+      const data = buf.slice(start, start + csize);
+      if(method === 0) return new TextDecoder('utf-8').decode(data);
+      if(method !== 8) throw new Error('暂不支持该 .docx 的压缩方式');
+      if(typeof DecompressionStream === 'undefined') throw new Error('当前浏览器不支持解压 .docx，请使用较新版 Chrome / Edge');
+      const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return await new Response(stream).text();
+    }
+    off += 46 + nLen + eLen + cLen;
+  }
+  throw new Error('文档中缺少 ' + target);
+}
+
+/* —— 段落合并：w:t 取字、w:tab 制表、w:br 换行；首行缩进折算为全角空格 —— */
+function readWmlPara(p){
+  let s = '';
+  (function walk(node){
+    for(let i = 0; i < node.childNodes.length; i++){
+      const ch = node.childNodes[i];
+      if(ch.nodeType !== 1) continue;
+      const n = ch.localName;
+      if(n === 't') s += ch.textContent;
+      else if(n === 'tab') s += '\t';
+      else if(n === 'br' || n === 'cr') s += '\n';
+      else if(n === 'delText' || n === 'instrText' || n === 'fldChar' || n === 'drawing' || n === 'pict'){ /* 修订删除 / 域代码 / 图形，跳过 */ }
+      else walk(ch);
+    }
+  })(p);
+  const child = (node, tag) => Array.prototype.filter.call(node.childNodes, c => c.nodeType === 1 && c.localName === tag)[0];
+  const pPr = child(p, 'pPr');
+  const ind = pPr ? child(pPr, 'ind') : null;
+  if(ind){
+    const attr = k => ind.getAttributeNS(W_NS, k) || ind.getAttribute('w:' + k) || '0';
+    if(parseFloat(attr('firstLineChars')) > 0 || parseFloat(attr('firstLine')) > 0) s = '　　' + s;
+  }
+  return s;
+}
+function xmlToPlainText(xml){
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw new Error('文档正文结构解析失败');
+  const paras = [];
+  (function collect(node){
+    for(let i = 0; i < node.childNodes.length; i++){
+      const ch = node.childNodes[i];
+      if(ch.nodeType !== 1) continue;
+      if(ch.localName === 'p') paras.push(readWmlPara(ch));
+      else collect(ch);
+    }
+  })(doc.documentElement);
+  return paras.join('\n');
+}
+async function parseDocx(buf){
+  const xml = await readZipEntryText(buf, 'word/document.xml');
+  return { text: xmlToPlainText(xml) };
+}
+
+/* —— OLE 复合文档（.doc）—— */
+const OLE_MAGIC = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+function parseCfb(buf){
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  if(u8.length < 512) return null;
+  for(let i = 0; i < 8; i++) if(u8[i] !== OLE_MAGIC[i]) return null;
+
+  const secSize = 1 << dv.getUint16(0x1E, true);
+  const miniSecSize = 1 << dv.getUint16(0x20, true);
+  const miniCut = dv.getUint32(0x38, true) || 4096;
+  const firstDir = dv.getUint32(0x30, true);
+  const firstMiniFat = dv.getUint32(0x3C, true);
+  const numMiniFat = dv.getUint32(0x40, true);
+  const firstDifat = dv.getUint32(0x44, true);
+  const numDifat = dv.getUint32(0x48, true);
+  const secOff = s => (s + 1) * secSize;
+
+  const fatSectors = [];
+  for(let i = 0; i < 109; i++){
+    const v = dv.getUint32(0x4C + i*4, true);
+    if(v >= 0xFFFFFFFA) break;
+    fatSectors.push(v);
+  }
+  let d = firstDifat, guard = 0;
+  while(d < 0xFFFFFFFA && guard++ <= numDifat + 2){
+    const o = secOff(d), per = secSize/4 - 1;
+    for(let i = 0; i < per; i++){
+      const v = dv.getUint32(o + i*4, true);
+      if(v < 0xFFFFFFFA) fatSectors.push(v);
+    }
+    d = dv.getUint32(o + per*4, true);
+  }
+  const fat = [];
+  fatSectors.forEach(s=>{
+    const o = secOff(s);
+    for(let i = 0; i < secSize/4; i++) fat.push(dv.getUint32(o + i*4, true));
+  });
+  const chainOf = (start, table) => {
+    const out = []; let s = start, g = 0;
+    while(s < 0xFFFFFFFA && g++ < 200000){ out.push(s); s = table[s]; }
+    return out;
+  };
+  const gather = (start, size) => {
+    const parts = chainOf(start, fat).map(s => u8.subarray(secOff(s), secOff(s) + secSize));
+    const total = parts.reduce((a, b) => a + b.length, 0);
+    const out = new Uint8Array(total); let p = 0;
+    parts.forEach(b => { out.set(b, p); p += b.length; });
+    return size ? out.subarray(0, Math.min(size, total)) : out;
+  };
+
+  const dir = gather(firstDir, 0), entries = [];
+  for(let o = 0; o + 128 <= dir.length; o += 128){
+    const nLen = dir[o+64] | (dir[o+65] << 8);
+    let name = '';
+    for(let j = 0; j + 1 < nLen - 2; j += 2) name += String.fromCharCode(dir[o+j] | (dir[o+j+1] << 8));
+    entries.push({
+      name, type: dir[o+66],
+      start: dir[o+116] | (dir[o+117] << 8) | (dir[o+118] << 16) | (dir[o+119] << 24),
+      size:  dir[o+120] | (dir[o+121] << 8) | (dir[o+122] << 16) | (dir[o+123] << 24)
+    });
+  }
+  const root = entries.find(e => e.type === 5);
+  const miniStream = (root && root.size) ? gather(root.start, root.size) : null;
+  const miniFat = [];
+  if(firstMiniFat < 0xFFFFFFFA && numMiniFat){
+    const mb = gather(firstMiniFat, numMiniFat*secSize);
+    const mdv = new DataView(mb.buffer, mb.byteOffset, mb.length);
+    for(let i = 0; i < mb.length/4; i++) miniFat.push(mdv.getUint32(i*4, true));
+  }
+  const readStream = e => {
+    if(!e) return null;
+    if(e.size < miniCut && miniStream){
+      const out = new Uint8Array(e.size); let s = e.start, p = 0, g = 0;
+      while(s < 0xFFFFFFFA && p < out.length && g++ < 200000){
+        out.set(miniStream.subarray(s*miniSecSize, s*miniSecSize + Math.min(miniSecSize, out.length - p)), p);
+        p += miniSecSize; s = miniFat[s];
+      }
+      return out;
+    }
+    return gather(e.start, e.size);
+  };
+  return { entries, readStream };
+}
+
+/* 复杂格式（fComplex）：用 Table 流里的 CLX 分片表精确取正文 */
+function clxText(cfb, s, dv, ccpText){
+  const flags = dv.getUint16(0x0A, true);
+  const tblName = (flags & 0x0200) ? '1Table' : '0Table';
+  const tb = cfb.entries.find(e => e.type === 2 && e.name === tblName);
+  if(!tb) return null;
+  const tbBuf = cfb.readStream(tb);
+  if(!tbBuf || tbBuf.length < 16) return null;
+  const td = new DataView(tbBuf.buffer, tbBuf.byteOffset, tbBuf.length);
+  if(s.length < 0x1AA) return null;
+  const fcClx = dv.getUint32(0x01A2, true);
+  const lcbClx = dv.getUint32(0x01A6, true);
+  if(!lcbClx || fcClx + lcbClx > tbBuf.length) return null;
+
+  // 跳过 Prc（0x01 开头的属性块），定位 Pcdt（0x02）
+  let p = fcClx; const end = fcClx + lcbClx;
+  let guard = 0;
+  while(p + 3 <= end && td.getUint8(p) === 0x01 && guard++ < 5000){
+    p += 3 + td.getInt16(p + 1, true);
+  }
+  if(p + 5 > end || td.getUint8(p) !== 0x02) return null;
+  const lcb = td.getUint32(p + 1, true);
+  const plc = p + 5;
+  if(lcb < 16 || plc + lcb > tbBuf.length) return null;
+  const n = Math.floor((lcb - 4) / 12);
+  if(n <= 0) return null;
+
+  let out = '', acc = 0;
+  for(let i = 0; i < n && acc < ccpText; i++){
+    const cpS = td.getUint32(plc + i*4, true);
+    const cpE = td.getUint32(plc + (i+1)*4, true);
+    const pcdO = plc + (n+1)*4 + i*8;
+    if(pcdO + 8 > tbBuf.length) break;
+    const fcVal = td.getUint32(pcdO + 2, true);
+    const compressed = !!(fcVal & 0x40000000);
+    const fc = fcVal & 0x3FFFFFFF;
+    let cch = cpE - cpS;
+    if(cch <= 0) continue;
+    const raw = cch;
+    if(acc + cch > ccpText) cch = ccpText - acc;
+    acc += raw;
+    if(compressed){
+      const b0 = Math.floor(fc/2);
+      if(cch > 0 && b0 + cch <= s.length) out += bytesToText(s.subarray(b0, b0 + cch), 'gbk');
+    }else{
+      if(cch > 0 && fc + cch*2 <= s.length) out += bytesToText(s.subarray(fc, fc + cch*2), 'utf-16le');
+    }
+  }
+  return out || null;
+}
+
+/* 按 FIB 定位正文：非复杂格式可直接取连续文本块 */
+function oleDocText(buf){
+  const cfb = parseCfb(buf);
+  if(!cfb) return null;
+  const wd = cfb.entries.find(e => e.type === 2 && e.name === 'WordDocument');
+  if(!wd) return null;
+  const s = cfb.readStream(wd);
+  if(!s || s.length < 64) return null;
+  const dv = new DataView(s.buffer, s.byteOffset, s.length);
+  const flags = dv.getUint16(0x0A, true);
+  const fcMin = dv.getInt32(0x18, true);
+  const ccpText = dv.getInt32(0x4C, true);
+  const isExt = !!(flags & 0x1000);
+  if(ccpText <= 0) return null;
+  // 优先用 CLX 分片表：精确给出每段文本的编码与位置，避免连续块混入非正文数据
+  const viaClx = clxText(cfb, s, dv, ccpText);
+  if(viaClx) return viaClx;
+  if(fcMin <= 0) return null;
+  if(isExt && fcMin + ccpText*2 <= s.length) return bytesToText(s.subarray(fcMin, fcMin + ccpText*2), 'utf-16le');
+  if(!isExt && fcMin + ccpText <= s.length) return bytesToText(s.subarray(fcMin, fcMin + ccpText), 'gbk');
+  return null;
+}
+
+/* 启发式扫描：旧版 .doc 复杂格式下的兜底提取 */
+function isReadableU16(c){
+  if(c === 9 || c === 10 || c === 13 || c === 32) return true;
+  if(c >= 0x20 && c <= 0x7E) return true;
+  if(c >= 0x4E00 && c <= 0x9FFF) return true;
+  if(c >= 0x3000 && c <= 0x303F) return true;
+  if(c >= 0xFF00 && c <= 0xFFEF) return true;
+  if(c >= 0x2010 && c <= 0x203B) return true;
+  if(c === 0x00B7 || c === 0x2022 || c === 0x25CF || c === 0x25A0 || c === 0x2103) return true;
+  return false;
+}
+function heuristicU16Text(u8){
+  const out = []; let cur = '';
+  const flush = ()=>{ const t = cur.trim(); if(t.length >= 6 && /[\u4e00-\u9fff]/.test(t)) out.push(t); cur = ''; };
+  for(let i = 0; i + 1 < u8.length; i += 2){
+    const c = u8[i] | (u8[i+1] << 8);
+    if(c && isReadableU16(c)) cur += String.fromCharCode(c);
+    else flush();
+  }
+  flush();
+  return out.join('\n');
+}
+
+/* RTF 容器（部分 .doc 实为 RTF） */
+function rtfToText(s){
+  s = s.replace(/\\par[d]?\b/g, '\n').replace(/\\line\b/g, '\n');
+  s = s.replace(/\{\\\*[^{}]*\}/g, '');
+  s = s.replace(/\\u(-?\d+)\s?\??/g, (m, d) => String.fromCharCode(((parseInt(d, 10) % 65536) + 65536) % 65536));
+  s = s.replace(/\\'([0-9a-fA-F]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
+  s = s.replace(/\\[a-zA-Z]+-?\d*\s?/g, '');
+  s = s.replace(/[{}]/g, '');
+  return s;
+}
+
+function parseDoc(buf){
+  const u8 = new Uint8Array(buf);
+  const head = bytesToText(u8.subarray(0, Math.min(1024, u8.length)), 'latin1');
+  if(/^\s*\{\\rtf/i.test(head)) return { text: rtfToText(bytesToText(u8, 'latin1')), src:'RTF 容器' };
+  const ole = oleDocText(buf);
+  if(ole && /\S/.test(ole)) return { text: ole, src:'Word 97-2003 二进制文档' };
+  const guess = heuristicU16Text(u8);
+  if(guess) return { text: guess, src:'旧版 .doc', rough:true };
+  return { text: bytesToText(u8, 'utf-8').replace(/\u0000/g, ''), src:'文本容器', rough:true };
+}
+
+/* 统一清理：换行归一、去控制符、压缩空行（保留段首缩进） */
+function normalizeExtracted(t){
+  return String(t || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/* —— 上传 / 拖拽绑定 —— */
+(function bindReviewIO(){
+  const drop = $('revDrop'), file = $('revFile');
+  if(!drop) return;
+  file.addEventListener('change', e=>{ if(e.target.files.length) readRevFile(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e=>{ if(e.dataTransfer.files.length) readRevFile(e.dataTransfer.files[0]); });
+})();
+
+async function readRevFile(f){
+  if(!f) return;
+  const name = f.name || '未命名文档';
+  if(!WORD_RE.test(name)){ toast('err','当前仅支持 .docx 格式的 Word 文档'); return; }
+  const isDocx = /\.docx$/i.test(name);
+  try{
+    const buf = await f.arrayBuffer();
+    const res = isDocx ? await parseDocx(buf) : parseDoc(buf);
+    const text = normalizeExtracted(res.text);
+    if(!text) throw new Error(isDocx ? '未解析到正文内容' : '未解析到正文，请将该文档另存为 .docx 后重试');
+    reviewText = text;
+    showRevFileBar(name, f.size, text.length, res.rough);
+    toast('ok', '已解析「' + name + '」正文 ' + text.length + ' 字');
+  }catch(err){
+    toast('err', '解析失败：' + ((err && err.message) || err));
+  }
+}
+
+renderRevTpls();
+</script>
+<script>
+/* If the live integration script cannot load, never fall back to prototype results. */
+TEMPLATES = []; renderList(); renderStats();
+wzNext = () => toast('err', '请从本地服务 http://127.0.0.1:8765/ 打开页面');
+runReview = () => toast('err', '本地服务未连接，不能执行审查');
+saveTemplate = () => toast('err', '本地服务未连接，不能保存模板');
+fixAndDownload = () => toast('err', '原 DOCX 定点修复尚未接入');
+</script>
+<script src="/frontend-integration.js"></script>
+</body>
+</html>

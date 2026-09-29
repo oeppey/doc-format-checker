@@ -68,6 +68,13 @@ rules:
       line_pt: 29.5        # 固定值 29.5 磅
       tolerance_pt: 0.5
 
+  # Q4：覆盖通用署名规则的空段行距，跟本类型正文固定行距相同；业务仍需确认代理口径。
+  - id: signature-layout
+    checker: signature
+    params:
+      blank_line_spacing_pt: 29.5
+      blank_line_tolerance_pt: 0.5
+
   - id: char-spacing
     name: 字符间距
     severity: error

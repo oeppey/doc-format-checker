@@ -39,8 +39,6 @@ def should_skip(text: str) -> str | None:
     t = text.strip().strip("。；，、")
     if len(t) < 4:
         return "过短"
-    if cjk_ratio(t) < 0.6:
-        return "非中文为主"
     if WENHAO_RE.search(t):
         return "文号行"
     if DATE_LINE_RE.match(t):
@@ -49,4 +47,6 @@ def should_skip(text: str) -> str | None:
         return "页码行"
     if ID_NUMBER_RE.fullmatch(t):
         return "证件号码"
+    if cjk_ratio(t) < 0.6:
+        return "非中文为主"
     return None

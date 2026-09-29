@@ -1,0 +1,38 @@
+{
+  "file": "14_heading1_misnumbered_labeled.docx",
+  "doc_type": "dazi",
+  "purpose": "反例：第 5 段是一级标题（黑体小二加粗）但编号错用「1、」；人工明确标为 heading1，验证角色识别不依赖编号正则、编号错误仍能被检查",
+  "annotated_by": "AI 起草（Kimi），待业务人工复核",
+  "annotated_at": "2026-09-27",
+  "annotation_method": "生成后核对 OOXML（document.xml）确认该段为黑体 18 磅加粗",
+  "role_labels": [
+    {"location": "body/p1", "role": "secrecy"},
+    {"location": "body/p2", "role": "title"},
+    {"location": "body/p3", "role": "heading1"},
+    {"location": "body/p4", "role": "body"},
+    {"location": "body/p5", "role": "heading1", "note": "编号写错（1、）但语义与版式都是一级标题；机器当前靠字体启发式（黑体→heading1）归对"},
+    {"location": "body/p6", "role": "heading2"},
+    {"location": "body/p7", "role": "body"},
+    {"location": "body/p8", "role": "heading3"},
+    {"location": "body/p9", "role": "body"},
+    {"location": "body/p10", "role": "heading1"},
+    {"location": "body/p11", "role": "body"},
+    {"location": "body/p13", "role": "attachment"},
+    {"location": "body/p16", "role": "signature"},
+    {"location": "body/p17", "role": "date"}
+  ],
+  "parse_expectations": [
+    {"location": "body/p5/run1", "property": "font_ea", "value": "方正黑体_GBK"},
+    {"location": "body/p5/run1", "property": "size_pt", "value": 18}
+  ],
+  "expected_findings": [
+    {
+      "rule_id": "heading-number",
+      "severity": "error",
+      "paragraph": 5,
+      "message_contains": "1级标题编号形式",
+      "expected_contains": "一、",
+      "actual_contains": "1、"
+    }
+  ]
+}

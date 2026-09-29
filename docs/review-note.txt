@@ -1,0 +1,19 @@
+**这些样本可以用于代码回归，但还不能作为业务验收集。**我做了只读核查：16 份 DOCX 都能正常打开，重新运行生成器后，包内 XML 与现有文件逐份一致；人工样本测试 **64 项通过**。不过 01、04、06、08 是完全相同的文档，所以实际只有 **13 份不同的 DOCX**。
+
+你转来的“三处 known_gaps”是旧状态：上一轮修复后，02 的第二个 run 和 16 的首页／偶数页页脚已进入正式断言；15 的表格文字也已解析，目前剩的是**表格角色和格式规则尚未应用**。
+
+| 样本 | 现在能用于什么 | 建议你手工调整什么 |
+|---|---|---|
+| [02、03](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/font/02_body_font_second_run_bad.docx)、[14](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/heading/14_heading1_misnumbered_labeled.docx) | 较好的拆 run、样式继承、错编号回归例 | 核对 Word 中的有效属性和预期角色；03 的 gold 可再记录“属性来自段落样式” |
+| [01](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/font/01_body_font_ok.docx)、[04](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/page/04_page_number_ok.docx)、[06](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/secrecy/06_secrecy_ok.docx)、[08](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/attachment/08_attachment_indent_ok.docx) | 同一份合规底稿的四组断言 | 不必改四份 Word；统计时算一份文档、四个检查视角 |
+| [05](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/page/05_page_number_empty.docx) | “没有页脚”的反例 | 文件名的 `empty` 容易误解为“有 PAGE 域但数字为空”；建议改名，并另补真正的空数字样本 |
+| [07](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/secrecy/07_secrecy_misplaced.docx) | “密级居中”的反例 | 密级仍是首个非空段，并未移到后文。改名为“居中”，另补真正的错位样本 |
+| [09](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/attachment/09_attachment_indent_one_space.docx) | “只留一个半角空格”的反例 | 若要测“左空一字”，再做一个**一个全角空格**或首行缩进一字的样本；当前首字符是 U+0020 |
+| [10](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/heading/10_heading_number_in_body_bad.docx) | 暂可测当前启发式 | **优先请业务判定。**gold 一面写“语义上疑似一级标题”，一面因字体是正文仿宋而标为 `body`。语义角色真值不应由待检查的字体决定。建议分别做“真正的错格式标题”和“合法的正文编号” |
+| [11、12](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/signature/11_signature_date_format_bad.docx) | 当前检查器回归 | 11 的日期写法是图片要求之外的附加规则；12 数的是空段落，尚不能证明视觉上“下空二行”。先核准业务口径 |
+| [15](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/table/15_body_in_table.docx) | 很有价值的**未覆盖反例**：表格中确有错误宋体 | 表格目前排在署名、日期之后，建议移到正文位置；再确认表格文字是否适用正文的字体规则 |
+| [16](D:/zyb/Projects/doc-format-checker/tests/fixtures/manual/section/16_multi_section_odd_even_footer.docx) | 可测首页／偶数页页脚的 XML 解析 | 一份文件同时产生 7 条问题，适合综合回归，不适合定位单一缺陷；若要验收实际奇偶页显示，还须在 Word 中逐页查看或渲染核对 |
+
+测试代码也有两处要补：10、11、12 没有 `parse_expectations`；[测试文件](D:/zyb/Projects/doc-format-checker/tests/test_manual_fixtures.py)只核对已列出的角色，没有断言“所有非空段都已标注”，且 Finding 中的 `run`、`field` 字段目前不参与匹配。这些是**测试断言问题**，不需要你手改 Word。
+
+建议先处理 **10、07、09、15** 的人工真值和样本文本，再处理 16 的逐页视觉核对。手工修改 DOCX 时要注意：[生成脚本](D:/zyb/Projects/doc-format-checker/tests/fixtures/build_manual_fixtures.py)会覆盖同名文件；请同步修改生成逻辑，或把真正手工修订的 Word 单独保存并标明来源、复核人和日期。

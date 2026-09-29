@@ -1,0 +1,61 @@
+可以。先只处理[前端现有字段](D:/zyb/Projects/doc-format-checker/template-management.html:848)中的**页面、字体、段落、页码**，排除“其他规范要求”。
+
+统一规则写法建议为：
+
+```json
+{
+  "id": "paragraph.line_spacing",
+  "scope": {"role": "body"},
+  "expected": {"mode": "exact", "value": 32, "unit": "pt"},
+  "tolerance": {"value": 0.5, "unit": "pt"}
+}
+```
+
+`id` 指检测什么，`scope` 指检查哪里，`expected` 是用户确认后的标准值。上传 Word 读到的实际值应另存为 `observed`，不能直接视为标准。
+
+## 当前页面字段的标准化清单
+
+| 页面上的内容 | 建议的规则字段 | 标准值与单位 |
+|---|---|---|
+| A4 纸张 | `page.size` | `{width:210, height:297, unit:"mm", orientation:"portrait"}` |
+| 上、下、左、右页边距 | `page.margin_top`、`bottom`、`left`、`right` | 数值统一为 `cm` |
+| 页脚距离 | `page.footer_distance` | 数值统一为 `cm`；含义定义为**页脚距纸张底边** |
+| 标题、一级至四级标题、正文、文号、页码的中文字体 | `font.cjk`＋`scope.role` | 规范字体名及可接受别名 |
+| 西文字体 | `font.latin`＋`scope.role` | 规范字体名及可接受别名；正文和文号可分别设置 |
+| 字号 | `font.size`＋`scope.role` | 统一为 `pt`，如小一＝24 pt、三号＝16 pt |
+| 加黑／常规 | `font.bold`＋`scope.role` | `true`／`false` |
+| 左对齐、居中、右对齐、两端对齐 | `paragraph.alignment`＋`scope.role` | `left`／`center`／`right`／`justify` |
+| 行距 | `paragraph.line_spacing` | `{mode:"exact"或"at_least", value:数值, unit:"pt"}`，或 `{mode:"multiple", value:倍数}` |
+| 字符间距 | `font.character_spacing`＋`scope.role` | 带正负号的 `pt`：标准＝0，加宽＝正数，紧缩＝负数 |
+| 首行缩进 | `paragraph.first_line_indent` | `{value:2, unit:"char"}` 或 `{value:数值, unit:"cm"}`；保留原单位类型 |
+| 段前、段后距离 | `paragraph.space_before`、`space_after` | 分别保存 `line` 或 `pt`，如 `{value:0, unit:"line"}` |
+| 允许西文换行 | `paragraph.latin_wrap` | 需要细化为“只在词间换行／允许在单词内部断行”两个明确选项 |
+| 页码 `— 1 —` | `page_number.field`、`page_number.decoration` | 页脚中的自动 `PAGE` 域；前后缀为 `—`，空格数量单独定义，数字 **1 不写死** |
+| 页码水平居中 | `paragraph.alignment`，角色为 `page_number` | `center`，复用上面的对齐规则 |
+| 页码上下居中 | `page_number.vertical_alignment` | `center`；需要页面渲染后判断 |
+| 单页码右空一字、双页码左空一字 | `page_number.odd_right_padding`、`even_left_padding` | `{value:1, unit:"char"}`；页面位置需渲染验证 |
+| 附件与正文连续编页码 | `page_number.continuous_on_attachment` | `true`／`false` |
+
+相同的字体、字号规则通过 `scope.role` 复用，角色取 `title`、`heading1`～`heading4`、`body`、`wenhao`、`page_number` 等；不为每个角色发明不同的字段名。
+
+有两个前端文案必须在录入时澄清：
+
+- 目前写的“**页脚底端距版心 1.75 厘米**”不能直接映射成 Word 的“页脚距底边”。Word 的 `FooterDistance` 定义是页脚与**页面底边**的距离。[微软的字段说明](https://learn.microsoft.com/en-us/office/vba/api/word.pagesetup.footerdistance)。
+- “**允许西文换行**”可能指在单词之间换行，也可能允许把一个英文单词从字符中间断开；两者不是同一规则。[OOXML 的断词属性说明](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.wordwrap?view=openxml-3.0.1)。
+
+## 输入怎样转换
+
+前端宜提供类型、模式、数值、单位控件；若提供文字输入，则只解析约定写法：
+
+| 用户输入 | 保存的标准值 |
+|---|---|
+| `上边距 38 mm` | `page.margin_top = 3.8 cm` |
+| `正文小二号` | `font.size(role=body) = 18 pt` |
+| `固定行距 0.8 cm` | `line_spacing = {mode:"exact", value:约22.7, unit:"pt"}` |
+| `1.5 倍行距` | `line_spacing = {mode:"multiple", value:1.5}` |
+| `首行缩进 2 字符` | `{value:2, unit:"char"}` |
+| `段前 0 行、段后 0 行` | 两条独立规则，单位均为 `line` |
+
+**倍数行距不能换成固定磅值。**固定／最小行距和倍数行距在 Word 底层采用不同单位。[微软的行距定义](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.spacingbetweenlines.line?view=openxml-3.0.1)。`0.8 cm` 若没写“固定值”还是“最小值”，系统应让用户选择模式。
+
+按上表的**原子字段类型**计算，建议目录为页面 6 项、角色文字与对齐 5 项、段落 6 项、页码专属 6 项，合计 **23 个候选类型**；同一类型应用于多个角色，会产生多条模板规则。**23 是建议的目录拆分口径，不是当前已实现数。**目前代码只有 [9 类检查器](D:/zyb/Projects/doc-format-checker/src/document_checker/rules_schema.py:13)，两套模板各有 12 条生效规则；纸张尺寸、两端对齐、倍数行距、段前段后及页码视觉位置等还需补实现。前端应根据目录中的“已支持／待实现／需渲染”状态展示能力。

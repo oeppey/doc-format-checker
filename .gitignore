@@ -12,3 +12,4 @@ models/
 *.safetensors
 .env.*
 !.env.example
+data/
