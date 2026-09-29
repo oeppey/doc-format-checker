@@ -21,6 +21,15 @@
 
     .venv\Scripts\python.exe scripts/typo_model_smoke.py --detector-model-dir data/models/ChineseErrorDetectorElectra --device cpu --threshold 0.8
 
+## 服务器 GPU 冒烟（2026-09-29，zzx 6×RTX 4090）
+
+ELECTRA 权重由 Windows 本机 scp 直传（389 MB，revision b58d6b 字节级一致），服务器路径 `~/doc-format-checker/data/models/ChineseErrorDetectorElectra`，经 `CED_MODEL_DIR` 指定。CUDA 冒烟结果：设备 cuda，模型加载 4.8 秒（CPU 7.8 秒），四句批量推理 0.26 秒；检出与 CPU 完全一致（「布署」句标出布 0.98／署 0.898，「按排」句标出按 0.999，两句正常样本无嫌疑）。4B 精检仍为 not tested，待 vLLM 服务就绪。小批量下 GPU 无速度优势，吞吐优势需在 T-02 阈值标定时以大批量复测。
+
+复现命令（服务器）：
+
+    export CED_MODEL_DIR=~/doc-format-checker/data/models/ChineseErrorDetectorElectra
+    .venv/bin/python scripts/typo_model_smoke.py --detector-model-dir $CED_MODEL_DIR --device cuda --threshold 0.8
+
 脚本仅在提供 --corrector-url 与 --corrector-model 后调用真实精检服务；未提供时输出明确的 not tested。
 
 ## 在 NVIDIA Linux 开发服务器上运行
