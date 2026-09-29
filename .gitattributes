@@ -1,0 +1,20 @@
+# 统一行尾：文本文件入库为 LF，避免 Windows/Linux 往返污染
+* text=auto eol=lf
+
+# 二进制文件不做行尾转换
+*.docx binary
+*.doc binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.safetensors binary
+*.bin binary
+*.zip binary
+*.gz binary

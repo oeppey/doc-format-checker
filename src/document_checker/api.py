@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -87,6 +88,18 @@ async def _save_upload(file: UploadFile) -> str:
 def create_app(*, data_dir: Path = DEFAULT_DATA, rules_dir: Path = RULES_DIR,
                html_path: Path = ROOT / "template-management.html") -> FastAPI:
     app = FastAPI(title="文档质检本地服务", version="0.1.0")
+    # 跨域：默认放行本机常见前端端口；服务器部署时用
+    # DOCUMENT_CHECKER_CORS_ORIGINS="https://前端域名,http://..." 显式指定。
+    origins = [item.strip() for item in os.environ.get(
+        "DOCUMENT_CHECKER_CORS_ORIGINS",
+        "http://localhost:5173,http://localhost:7100,http://127.0.0.1:5173,http://127.0.0.1:7100",
+    ).split(",") if item.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
     store = TemplateStore(data_dir)
     review_dir = data_dir.parent / 'reviews'
     review_dir.mkdir(parents=True, exist_ok=True)

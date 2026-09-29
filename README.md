@@ -29,6 +29,41 @@ document-checker check samples/违规示例.docx --report 报告.md --json 报�
 已注入 10 类违规的演示样本见 `samples/`，对应报告见 `samples/检查报告-违规示例.md`。
 本轮验证过的合规样本是 `samples/合规-呈报稿大字版-新版.docx` 与小字版对应文件，均为 0 Finding。旧同名文件使用旧附件缩进规则，不能作为当前合规依据。19 个 Word 回归案例（16 份不同 DOCX）的 gold 仍待业务人工复核。
 
+## Linux / NVIDIA 服务器部署
+
+代码无 Windows 专有依赖，clone 后可直接部署。服务器 locale 需为 UTF-8。
+
+```bash
+git clone git@github.com:oeppey/doc-format-checker.git
+cd doc-format-checker
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"        # 或完全复现：pip install -r requirements.lock && pip install -e .
+pytest -q                      # 基线：全部通过后再继续
+
+# GPU 初筛模型（Linux 上 pip 默认装 CUDA 版 torch）
+pip install -e ".[detector]"
+python -c "import torch; print(torch.cuda.is_available())"   # 期望 True
+export CED_MODEL_DIR=/path/to/ChineseErrorDetectorElectra    # 权重不入库
+
+# 精检模型：OpenAI 兼容服务（如 vLLM 部署的 4B/27B）
+export DOCUMENT_CHECKER_USE_LLM=1
+export DOCUMENT_CHECKER_CORRECTOR_BASE_URL=http://127.0.0.1:8000/v1
+export DOCUMENT_CHECKER_CORRECTOR_MODEL=<服务上的模型名>
+export DOCUMENT_CHECKER_CORRECTOR_API_KEY=<如需>
+# 4B「思考段＋改正后整句」或 27B JSON 协议由 DOCUMENT_CHECKER_CORRECTOR_PROTOCOL 指定
+
+# 逐页 PDF 预览（格式/错字坐标标注）依赖 LibreOffice
+sudo apt install libreoffice-writer-nogui    # 或完整 libreoffice
+# 找不到时设置 DOCUMENT_CHECKER_SOFFICE=/path/to/soffice
+
+# 对外提供服务（前端在另一台机器时）
+export DOCUMENT_CHECKER_CORS_ORIGINS="http://前端地址:端口"
+python -m uvicorn document_checker.api:app --host 0.0.0.0 --port 8765
+```
+
+**字体是硬前提**：预览渲染和坐标映射必须与用户 Word 使用同一套字体（方正仿宋_GBK、方正小标宋_GBK、方正黑体/楷体 GBK、宋体）。把字体文件装入 `/usr/share/fonts/` 后执行 `fc-cache -f`，用 `fc-list | grep -i 方正` 核对 fontconfig 识别的名字与 Word 中的字体名一致；缺字体会被替换，导致分页和坐标整体偏移。方正字体有授权要求，部署前确认许可。模型部署与复现细节见 [错字模型接入与验证](docs/typo_model_integration.md)。
+
 ## 本地页面与接口
 
 安装基础依赖后运行：
