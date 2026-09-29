@@ -50,4 +50,3 @@ rules:
     params:
       date_format: chinese     # 2026年9月18日；不接受 2026年09月18日
       blank_lines_before: 2    # 署名前两个空 Word 段；只用于内部规则的暂定代理
-      seal_expected: false     # 是否要求盖章（印章位置检查需 VLM，接口预留）

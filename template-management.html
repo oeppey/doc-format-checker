@@ -887,8 +887,8 @@ const PRESETS = {
       security:'顶格编排在版心左上角、加粗，方正黑体 GBK、小二；「秘密」二字间空一格',
       sequence:'一级「一、」方正黑体 GBK；二级「（一）」方正楷体 GBK；三级「1.」方正仿宋 GBK；四级「（1）」方正仿宋 GBK（三级、四级右侧不空格）',
       attach:'正文下空一行、左空两字编排「附件：1.XXXXXXXX」；附件名称后不加标点，回行与上一行附件名称首字对齐',
-      sign:'内部行文署名「******室」；外部行文署名「泰州市纪委监委******室」，一般下空二行，以盖章',
-      stamp:'需盖章时成文日期右空四字，署名在成文日期之上居中，印章端正居中下压署名与日期；无需盖章时署名在正文或附件说明下空二行右空二字',
+      sign:'内部行文署名「******室」；外部行文署名「泰州市纪委监委******室」，一般下空二行',
+      stamp:'成文日期用阿拉伯数字标全年、月、日，月、日不编虚位（如 2026年9月18日，依据 GB/T 9704-2012 7.3.5.4）',
       standard:'《党政机关公文格式》GB/T 9704-2012'
     }
   },
@@ -911,8 +911,8 @@ const PRESETS = {
       security:'顶格编排在版心左上角、加粗，方正黑体 GBK、三号；「秘密」二字间空一格',
       sequence:'一级「一、」方正黑体 GBK；二级「（一）」方正楷体 GBK；三级「1.」方正仿宋 GBK；四级「（1）」方正仿宋 GBK（三级、四级右侧不空格）',
       attach:'正文下空一行、左空两字编排「附件：1.XXXXXXXX」；附件名称后不加标点，回行与上一行附件名称首字对齐',
-      sign:'内部行文署名「******室」；外部行文署名「泰州市纪委监委******室」，一般下空二行，以盖章',
-      stamp:'需盖章时成文日期右空四字，署名在成文日期之上居中，印章端正居中下压署名与日期；无需盖章时署名在正文或附件说明下空二行右空二字',
+      sign:'内部行文署名「******室」；外部行文署名「泰州市纪委监委******室」，一般下空二行',
+      stamp:'成文日期用阿拉伯数字标全年、月、日，月、日不编虚位（如 2026年9月18日，依据 GB/T 9704-2012 7.3.5.4）',
       standard:'《党政机关公文格式》GB/T 9704-2012'
     }
   }
@@ -1095,7 +1095,7 @@ function openDetail(id){
   $('dc5').textContent = '6 项';
   $('dtExtra').innerHTML = [
     ['秘级标注', s.other.security], ['标题序号', s.other.sequence], ['附件编排', s.other.attach],
-    ['发文机关署名', s.other.sign], ['成文日期与印章', s.other.stamp], ['参考标准', s.other.standard]
+    ['发文机关署名', s.other.sign], ['成文日期', s.other.stamp], ['参考标准', s.other.standard]
   ].map(([k,v])=>`<tr><td class="k">${k}</td><td class="v" style="font-weight:400;color:var(--text-2)">${esc(v)}</td></tr>`).join('');
 
   detailSpec = s;
@@ -1287,7 +1287,7 @@ function buildResult(){
     ]},
     { title:'其他规范要求', icon:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>', rows:[
       ['秘级标注', s.other.security], ['标题序号层级', s.other.sequence], ['附件编排', s.other.attach],
-      ['发文机关署名', s.other.sign], ['成文日期与印章', s.other.stamp], ['参考标准', s.other.standard]
+      ['发文机关署名', s.other.sign], ['成文日期', s.other.stamp], ['参考标准', s.other.standard]
     ]}
   ];
 

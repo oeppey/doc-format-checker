@@ -22,8 +22,7 @@ def test_catalog_and_real_observations(tmp_path):
     response = client.get("/api/catalog")
     assert response.status_code == 200
     items = response.json()["items"]
-    assert len(items) == len(CATALOG) == 36
-    assert {x["id"]: x["capability"] for x in items}["structural.seal_layout"] == "unavailable"
+    assert len(items) == len(CATALOG) == 35
 
     good = _upload(client, GOOD, "/api/templates/extract")
     assert good.status_code == 200
@@ -79,11 +78,6 @@ def test_units_and_unavailable_rules_are_validated(tmp_path):
     assert response.status_code == 200
     assert response.json()["normalized_rules"][0]["expected"] == {"value": 3.8, "unit": "cm"}
 
-    seal = {"id": "structural.seal_layout", "scope": {},
-            "expected": {"value": True}, "enabled": True}
-    response = client.post("/api/templates/validate",
-                           json={"name": "印章", "rules": [seal]})
-    assert response.status_code == 422
     assert _upload(client, GOOD, "/api/templates/extract").status_code == 200
     response = client.post("/api/templates/extract",
                            files={"file": ("old.doc", b"not-docx")})

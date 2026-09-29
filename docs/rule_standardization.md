@@ -102,9 +102,9 @@
 | 结构 | `structural.attachment_blank_before` | role=attachment | `{value:1, unit:"blank_line"}` | attachment `blank_lines_before` | ✅ |
 | 结构 | `structural.attachment_trailing_punct` | role=attachment | `{value:"forbidden"}` | attachment `forbid_trailing_punct` | ✅ |
 | 结构 | `structural.signature_blank_before` | role=signature | `{value:2, unit:"blank_line"}`，空段行距 `{value:32, unit:"pt"}` | signature `blank_lines_before` 等 | ✅ 💼（Q4「下空二行」） |
-| 结构 | `structural.signature_right_padding` | role=signature | `{value:2, unit:"char", char_basis:"self_font"}`（署名右空二字） | 待新建 checker（解析器已读 `ParaInfo.right_chars`，当前无 checker 使用） | ⛔ 💼（Q7） |
 | 结构 | `structural.date_format` | role=date | `{value:"chinese_full"}`（2026年9月18日） | signature `date_format` | ✅ 💼（Q3 规则来源） |
-| 结构 | `structural.seal_layout` | — | 独立印章专项，参数待定 | — | 🖼 独立隔离，当前不可启用 |
+
+> 2026-09-29 业务确认：不做印章，盖章／不盖章两种情形的署名日期排版规则（署名右空二字、日期右移二字、日期右空四字、署名相对日期居中）一并取消，本表不再收录。
 
 > `blank_line`：当前实现数**空段落数**，是「视觉空行」的代理指标（仅作为代理，不保证与渲染后的视觉空行等价）。Q4 业务确认前保留该单位并注明代理性质。
 > 同一 role 的多个 `font.*` 原子规则编译时合并为一条 `font_format` 规则（见第六节示例）。
@@ -136,7 +136,7 @@
 
 ### 四.1 坐标参照系与「一字」基准（默认假设，待业务裁定 Q7）
 
-视觉规则（页码留空、署名右空、印章位置等）落地为 PDF 坐标比较之前，必须先固定以下口径；当前取默认值并显式存档，业务裁定后只改字段值、不改结构。
+视觉规则（页码留空等）落地为 PDF 坐标比较之前，必须先固定以下口径；当前取默认值并显式存档，业务裁定后只改字段值、不改结构。
 
 **参照系：一律以版心边缘为基准，不以纸张边缘。**
 
@@ -146,11 +146,11 @@
 
 **「一字」宽度：默认按所在元素自身字号（`char_basis:"self_font"`）。**
 
-- 页码右空一字 → 页码字号四号（14 pt ≈ 4.94 mm）；署名右空二字 → 署名段字号小二（18 pt ≈ 6.35 mm）。
+- 页码右空一字 → 页码字号四号（14 pt ≈ 4.94 mm）。
 - 依据：Word 的字符单位缩进（`rightChars`/`firstLineChars`）本身就按该段字号换算，解析器已读入 `ParaInfo.right_chars`，因此 XML 层检查与 PDF 渲染层检查同口径，不会出现两层各算各的。
 - 标准写法把基准显式存为字段：`{direction:"right", value:1, unit:"char", char_basis:"self_font"}`；`char_basis` 可选 `self_font`（默认）／`body_font`（按正文字号）／`absolute`（须配 `cm` 值）。
 
-**影响范围**：页码奇偶页留字、署名右空二字、盖章时日期右空四字同属此口径，一次裁定三处生效。
+**影响范围**：当前仅页码奇偶页留字使用此口径（署名右空、盖章日期右空已随印章整支取消）。
 
 ## 五、输入 → 标准语言转换表
 
@@ -210,9 +210,9 @@
 
 ## 七、第一轮代码落地边界（2026-09-28）
 
-- 目录包含 **36 个候选原子检测项**；旧页面原有 **29 行展示字段**，原型写死的「26 项」不是能力数量。现有后端是 **10 类检查器**；两套内置 YAML 每套合并后 **12 条生效规则**。
+- 目录包含 **35 个候选原子检测项**（2026-09-29 移除印章专项后）；旧页面原有 **29 行展示字段**，原型写死的「26 项」不是能力数量。现有后端是 **10 类检查器**；两套内置 YAML 每套合并后 **12 条生效规则**。
 - `GET /api/catalog` 返回候选项、输入类型及能力状态。上传 DOCX 的 `POST /api/templates/extract` 仅返回 `observed` 候选值、混合值和未检查范围；所有候选默认 `enabled:false`，用户确认后才是标准。
-- 自定义模板目前能编译页面边距及页脚距离、正文角色的中文／西文字体、字号、加粗、左／中／右对齐、固定行距、非负字符间距，以及所有有效页脚统一的 PAGE 域、居中、字体和字号。印章、表格定向、特定奇偶页页脚、倍数／最小行距、紧缩字符间距及多数结构原子项不能启用。两套内置 YAML 保持原有结构检查能力。
+- 自定义模板目前能编译页面边距及页脚距离、正文角色的中文／西文字体、字号、加粗、左／中／右对齐、固定行距、非负字符间距，以及所有有效页脚统一的 PAGE 域、居中、字体和字号。表格定向、特定奇偶页页脚、倍数／最小行距、紧缩字符间距及多数结构原子项不能启用。两套内置 YAML 保持原有结构检查能力。
 - `scope.part` 的产品设计可以继续保留表格及各类页眉页脚，但第一轮编译仅接受正文 `body` 和全部有效页脚 `footer-all`。无法表达的适用范围会被校验拒绝。
 - 同一角色的字体与对齐原子项仍合并到一个 `font_format` 检查器；这些项的 `severity` 必须相同。每个页面数值项独立编译，以保留各自允差。
 - 当前上传和审查入口只接受 `.docx`。错字检查会记录真实使用的检测器／纠错器；模型不可用时的启发式结果标为未检查。逐页预览与基础坐标标注已在阶段 4 接入；原 DOCX 修复仍在后续阶段实现。

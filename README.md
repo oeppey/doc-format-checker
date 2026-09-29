@@ -84,7 +84,7 @@ rules:
 | heading_number | 一、／（一）／1.／（1）层级形式，三四级右侧不空格，正文可疑编号 |
 | secrecy | 秘级位置（左上角顶格）、字体字号加粗、"秘 密"空一格 |
 | attachment | 左空两字、前文空行、名称后不加标点 |
-| signature | 署名/成文日期存在性与顺序、日期写法、下空二行；印章为 VLM 预留 |
+| signature | 署名/成文日期存在性与顺序、日期写法、下空二行 |
 
 ## Synthetic Document Generator（正式造数据模块）
 
@@ -158,8 +158,8 @@ ELECTRA 已在本机 CPU 用公开权重真实运行。4B/27B 尚无可用权重
 
 - python-docx 只能读到 XML 里显式写的格式；真实公文若把格式设在样式链/主题里，
   需要补样式继承解析（当前只兜底了段落样式一层）。拿到真实样本后重点验证这里。
-- 真实分页不可见（页码所在页、印章压字位置）→ 需 Word→PDF（LibreOffice）渲染 + VLM，
-  `signature` 检查器里已留接口；`role_mapper.map_roles_llm` 为 LLM 兜底预留。
+- 真实分页不可见（页码所在页等）→ 需 Word→PDF（LibreOffice）渲染；
+  `role_mapper.map_roles_llm` 为 LLM 兜底预留。
 - 单双页页码分居（单页右空一字/双页左空一字）、红头、版记等规则未覆盖。
 - 错别字检查链路（ELECTRA 粗筛 + 大模型精检）与本系统复用解析层和报告结构，
   作为独立子命令接入。

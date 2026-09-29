@@ -44,7 +44,6 @@ _ROWS = [
     ("structural.attachment_trailing_punct", "其他规范要求", "附件名称末尾标点", "bool", "partial"),
     ("structural.signature_blank_before", "其他规范要求", "署名前空段数", "blank", "partial"),
     ("structural.date_format", "其他规范要求", "成文日期格式", "date", "partial"),
-    ("structural.seal_layout", "印章专项", "印章位置", "seal", "unavailable"),
 ]
 CATALOG = [
     {"id": rid, "group": group, "label": label, "kind": kind, "capability": capability}

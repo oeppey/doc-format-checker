@@ -115,7 +115,6 @@ class DocModel:
     paragraphs: list[ParaInfo]
     sections: list[SectionInfo]
     footer_paras: list[FooterPara]
-    inline_image_count: int
     table_paragraphs: list[ParaInfo] = field(default_factory=list)
     header_paras: list[FooterPara] = field(default_factory=list)
     body_order: list[str] = field(default_factory=list)
@@ -377,7 +376,7 @@ def parse_document(path: str) -> DocModel:
         unchecked_parts.append(f"页眉内 {header_content} 个非空段落已解析，格式和错字规则尚未应用")
     return DocModel(
         path=path, paragraphs=paragraphs, sections=sections,
-        footer_paras=footer_paras, inline_image_count=len(doc.inline_shapes),
+        footer_paras=footer_paras,
         table_paragraphs=table_paragraphs, header_paras=header_paras,
         body_order=body_order, unchecked_parts=unchecked_parts,
         format_only_unchecked_parts=format_only_notes, story_links=story_links,

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""结构类检查器：页码、标题序号、秘级、附件、落款（印章位置走 VLM，预留）。"""
+"""结构类检查器：页码、标题序号、秘级、附件、落款。"""
 from __future__ import annotations
 
 import re
@@ -211,9 +211,9 @@ def attachment(model, roles, params):
 
 @register("signature")
 def signature(model, roles, params):
-    """落款：署名/成文日期存在性、顺序、日期写法、下空行数；印章位置为 VLM 预留。
+    """落款：署名/成文日期存在性、顺序、日期写法、下空行数。
     params: date_format(chinese), blank_lines_before, blank_line_spacing_pt,
-            blank_line_tolerance_pt, seal_expected
+            blank_line_tolerance_pt
     """
     findings = []
     sig = roles.get("signature", [])
@@ -260,14 +260,4 @@ def signature(model, roles, params):
                         actual=(f"{para.line_rule or '未设置'} {para.line_pt} 磅"
                                 if para.line_pt is not None else "未设置"),
                         severity="warning"))
-    if params.get("seal_expected"):
-        if model.inline_image_count == 0:
-            findings.append(Finding(location="文末", message="规则要求盖章但未检测到印章图片",
-                                    expected="发文机关署名处加盖印章", actual="无图片",
-                                    severity="warning"))
-        else:
-            findings.append(Finding(
-                location="文末", severity="info",
-                message="已检测到图片（疑似印章）；印章位置（端正、居中下压署名与成文日期）需 VLM 复核",
-                suggestion="VLM 印章位置检查接口已预留，接入 Word→PDF 渲染后启用"))
     return findings

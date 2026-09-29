@@ -20,7 +20,7 @@ FIELDS = {
     "heading_number": (set(), set()),
     "secrecy": (set(), {"fonts", "size_pt", "bold", "inner_space", "required"}),
     "attachment": (set(), {"indent_chars", "blank_lines_before", "forbid_trailing_punct"}),
-    "signature": (set(), {"date_format", "blank_lines_before", "blank_line_spacing_pt", "blank_line_tolerance_pt", "seal_expected"}),
+    "signature": (set(), {"date_format", "blank_lines_before", "blank_line_spacing_pt", "blank_line_tolerance_pt"}),
 }
 
 
@@ -96,7 +96,7 @@ def validate_ruleset(data: object, path: str) -> None:
                     _fail(field, f"未知角色，可选：{sorted(ROLES)}")
             elif key == "roles":
                 _roles(value, field)
-            elif key in {"bold", "required", "inner_space", "forbid_trailing_punct", "seal_expected", "enabled"}:
+            elif key in {"bold", "required", "inner_space", "forbid_trailing_punct", "enabled"}:
                 if not isinstance(value, bool):
                     _fail(field, "必须是布尔值")
             elif key == "alignment":
