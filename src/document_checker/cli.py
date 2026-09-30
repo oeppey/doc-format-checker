@@ -113,7 +113,8 @@ def cmd_typo(args):
             args.docx, threshold=args.threshold, use_llm=not args.no_llm,
             llm_model=args.model, detector_model_dir=args.detector_model_dir,
             detector_device=args.device, corrector_base_url=args.corrector_url,
-            corrector_protocol=args.corrector_protocol, require_models=args.require_models)
+            corrector_protocol=args.corrector_protocol, require_models=args.require_models,
+            use_dict_fallback=not args.no_dict_fallback)
     except (ValueError, KeyError, OSError, RuntimeError) as exc:
         print(f"错字检查无法完成：{exc}", file=sys.stderr)
         return 2
@@ -186,6 +187,7 @@ def main():
     t.add_argument("docx")
     t.add_argument("--threshold", type=float, default=0.85, help="ELECTRA 字级嫌疑阈值")
     t.add_argument("--no-llm", action="store_true", help="不调用大模型精检（启发式兜底）")
+    t.add_argument("--no-dict-fallback", action="store_true", help="关闭确定性词表兜底")
     t.add_argument("--model", help="LLM 型号（或设置 DOCUMENT_CHECKER_CORRECTOR_MODEL）")
     t.add_argument("--detector-model-dir", help="ELECTRA 本地模型目录（或设置 CED_MODEL_DIR）")
     t.add_argument("--device", default="auto", help="ELECTRA 设备：auto、cpu 或 cuda")

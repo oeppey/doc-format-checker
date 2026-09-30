@@ -21,6 +21,35 @@ CONFUSION_PAIRS = [p for p in CONFUSION_PAIRS if p[2]]
 
 WRONG2RIGHT = {w: r for w, r, _ in CONFUSION_PAIRS}
 
+# 词表兜底：公文中可确定性判误的写法，不经过模型直接给替换建议。
+# 收录标准：现代公文语境下没有合法用法、且不是更长专名的一部分。
+# 监官（古代官名）、其问（引文/文言中可合法出现）暂不收录，待业务确认。
+FALLBACK_PAIRS = [
+    ("布署", "部署", "同音"),
+    ("补帖", "补贴", "同音"),
+    ("帐户", "账户", "习惯性误用"),
+    ("既使", "即使", "同音"),
+    ("按排", "安排", "同音"),
+    ("暴光", "曝光", "同音"),
+    ("贯切", "贯彻", "形近"),
+    ("资全", "资金", "形近"),
+    ("官理", "管理", "形近"),
+]
+
+
+def dict_fallback_fixes(sentence: str) -> list[dict]:
+    """对单句做确定性词表检查，返回与精检器同构的 fixes（含 offset）。"""
+    from .corrector import validate_corrections
+
+    items = []
+    for wrong, right, kind in FALLBACK_PAIRS:
+        start = 0
+        while (pos := sentence.find(wrong, start)) >= 0:
+            items.append({"原文": wrong, "改为": right,
+                          "理由": f"词表兜底：{kind}字误写", "offset": pos})
+            start = pos + len(wrong)
+    return validate_corrections(items, sentence)
+
 
 def inject_typos_docx(src_path: str, out_path: str, pairs: list[str] | None = None):
     """在已生成的 docx 里注入错字：把正文 run 中出现的"正确写法"替换为"错误写法"。

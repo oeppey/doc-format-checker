@@ -135,6 +135,93 @@ def test_pipeline_with_mock_openai_service(tmp_path):
     assert report.findings[0].suggestion == "合"
 
 
+def test_dict_fallback_catches_unflagged_sentence(tmp_path):
+    """检测器未标记的句子，词表兜底仍能命中并给出准确位置。"""
+    docx = tmp_path / "fallback.docx"
+    doc = Document()
+    doc.add_paragraph("各单位要认真布署工作，确保任务完成。")
+    doc.save(docx)
+
+    class QuietDetector:
+        def detect(self, sentences):
+            return [None] * len(sentences)
+
+    class QuietCorrector:
+        def correct(self, sentence, suspect_chars=None):
+            return []
+
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(QuietDetector(), "electra:mock"),
+        corrector_backend=(QuietCorrector(), "llm:mock"),
+    )
+    assert report.dict_fallback == 1
+    assert len(report.findings) == 1
+    finding = report.findings[0]
+    assert finding.original == "布署" and finding.suggestion == "部署"
+    assert finding.source == "词表兜底"
+    assert finding.sentence[finding.sent_start:finding.sent_start + 2] == "布署"
+
+
+def test_dict_fallback_dedupes_model_fix(tmp_path):
+    """模型建议与兜底命中同一位置时只保留一条。"""
+    docx = tmp_path / "dedup.docx"
+    doc = Document()
+    doc.add_paragraph("各单位要认真布署工作，确保任务完成。")
+    doc.save(docx)
+
+    from document_checker.typo.detector import SuspectResult
+
+    class FlagDetector:
+        def detect(self, sentences):
+            return [SuspectResult(0.9, [(7, "布", 0.9)])]
+
+    class EchoCorrector:
+        def correct(self, sentence, suspect_chars=None):
+            return [{"原文": "布署", "改为": "部署", "理由": "模型建议", "offset": 7}]
+
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(FlagDetector(), "electra:mock"),
+        corrector_backend=(EchoCorrector(), "llm:mock"),
+    )
+    assert len(report.findings) == 1
+    assert report.findings[0].source == "词表兜底"
+
+
+def test_dict_fallback_can_be_disabled(tmp_path):
+    docx = tmp_path / "no_fallback.docx"
+    doc = Document()
+    doc.add_paragraph("各单位要认真布署工作，确保任务完成。")
+    doc.save(docx)
+
+    class QuietDetector:
+        def detect(self, sentences):
+            return [None] * len(sentences)
+
+    class QuietCorrector:
+        def correct(self, sentence, suspect_chars=None):
+            return []
+
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(QuietDetector(), "electra:mock"),
+        corrector_backend=(QuietCorrector(), "llm:mock"),
+        use_dict_fallback=False,
+    )
+    assert report.dict_fallback == 0
+    assert report.findings == []
+
+
+def test_dict_fallback_fixes_offsets():
+    from document_checker.typo.confusion import dict_fallback_fixes
+
+    fixes = dict_fallback_fixes("先布署，再布署。")
+    assert [(f["原文"], f["改为"], f["offset"]) for f in fixes] == [
+        ("布署", "部署", 1), ("布署", "部署", 5)]
+    assert dict_fallback_fixes("部署工作已完成。") == []
+
+
 def test_strict_mode_requires_corrector_service(tmp_path, monkeypatch):
     from document_checker.typo.detector import SuspectResult
 

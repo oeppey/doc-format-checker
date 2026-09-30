@@ -34,6 +34,7 @@ class TypoReport:
     skipped: int = 0
     skip_reasons: dict[str, int] = field(default_factory=dict)
     suspect: int = 0
+    dict_fallback: int = 0
     failed_sentences: int = 0
     unchecked_parts: list[str] = field(default_factory=list)
     detector_name: str = ""
@@ -63,7 +64,8 @@ class TypoReport:
             f"- 状态：**{self.status}**",
             f"- 检测器：{self.detector_name}；精检：{self.corrector_name}",
             f"- 句子：共 {self.total_sentences} 句，过滤 {self.skipped} 句，"
-            f"粗筛嫌疑 {self.suspect} 句，确认问题 {len(self.findings)} 处，失败 {self.failed_sentences} 句", "",
+            f"粗筛嫌疑 {self.suspect} 句，确认问题 {len(self.findings)} 处"
+            f"（其中词表兜底 {self.dict_fallback} 处），失败 {self.failed_sentences} 句", "",
         ]
         if self.skip_reasons:
             lines.append("- 过滤原因：" + "；".join(f"{k} {v} 句" for k, v in sorted(self.skip_reasons.items())))
@@ -103,9 +105,11 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
                    llm_model: str | None = None, detector_backend=None,
                    corrector_backend=None, model=None, detector_model_dir: str | None = None,
                    detector_device: str = "auto", corrector_base_url: str | None = None,
-                   corrector_protocol: str | None = None, require_models: bool = False) -> TypoReport:
+                   corrector_protocol: str | None = None, require_models: bool = False,
+                   use_dict_fallback: bool = True) -> TypoReport:
     from .detector import get_detector
     from .corrector import HeuristicCorrector
+    from .confusion import dict_fallback_fixes
     from .service_corrector import OpenAICorrector
 
     model = model or parse_document(path)
@@ -159,6 +163,20 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
     if not sentences:
         return report
 
+    # 词表兜底：对每句做确定性检查，与模型路径相互独立；记录位置用于模型建议去重
+    fallback_spans: set[tuple[int, int, int]] = set()
+    if use_dict_fallback:
+        for s in sentences:
+            for fix in dict_fallback_fixes(s.text):
+                off = fix["offset"]
+                report.findings.append(TypoFinding(
+                    para_index=s.para_index + 1, sent_start=s.start + off,
+                    sentence=s.text, original=fix["原文"], suggestion=fix["改为"],
+                    reason=fix["理由"], score=1.0, source="词表兜底"))
+                fallback_spans.add((s.para_index + 1, s.start + off,
+                                    s.start + off + len(fix["原文"])))
+        report.dict_fallback = len(fallback_spans)
+
     try:
         results = detector.detect([s.text for s in sentences])
         if len(results) != len(sentences):
@@ -185,6 +203,10 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
                     raise ValueError("精检建议的偏移与原句不符")
                 if off is None:
                     raise ValueError(f"片段 {src!r} 在句中重复，无法唯一定位")
+                abs_start = s.start + off
+                if any(fp == s.para_index + 1 and abs_start < fe and fs < abs_start + len(src)
+                       for fp, fs, fe in fallback_spans):
+                    continue  # 词表兜底已报同一位置，模型建议去重
                 report.findings.append(TypoFinding(
                     para_index=s.para_index + 1, sent_start=s.start + off,
                     sentence=s.text, original=src, suggestion=dst,
