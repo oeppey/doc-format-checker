@@ -32,6 +32,20 @@ def test_4b_think_output_and_exact_offset(monkeypatch):
     assert seen[0].read().decode("utf-8").find("ChineseErrorCorrector4-4B") >= 0
 
 
+def test_4b_suspect_hint_in_request():
+    seen = []
+    corrector = OpenAICorrector(
+        model="twnlp/ChineseErrorCorrector4-4B", base_url="http://127.0.0.1:8000/v1",
+        client=_mock_client("各单位要认真部署工作。", seen),
+    )
+    corrector.correct("各单位要认真布署工作。", [(6, "布", 0.91)])
+    payload = seen[0].read().decode("utf-8")
+    assert "疑似错字：「布」" in payload
+    seen.clear()
+    corrector.correct("各单位要认真布署工作。")
+    assert "疑似错字" not in seen[0].read().decode("utf-8")
+
+
 def test_4b_no_change_insert_and_protected_term():
     assert corrected_text_to_fixes("原句不变。", "原句不变。") == []
     assert corrected_text_to_fixes("请参加会议。", "请参加会。") == [

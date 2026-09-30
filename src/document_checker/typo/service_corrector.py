@@ -58,12 +58,19 @@ class OpenAICorrector:
 
     def correct(self, sentence: str, suspect_chars=None) -> list[dict]:
         hint = ""
-        if suspect_chars and self.protocol == "json":
+        if suspect_chars:
             chars = "、".join(f"「{c}」" for _, c, _ in suspect_chars[:6])
-            hint = f"\n检测器标记的疑似错字位置：{chars}（仅供参考）。"
+            if self.protocol == "json":
+                hint = f"\n检测器标记的疑似错字位置：{chars}（仅供参考）。"
+            else:
+                hint = f"\n检测器标记的疑似错字：{chars}（仅供参考，请重点核对）。"
+        if self.protocol == "corrected_text":
+            user_content = f"{sentence}{hint}"
+        else:
+            user_content = f"请检查这句话：\n{sentence}{hint}"
         messages = [
             {"role": "system", "content": CORRECTED_TEXT_PROMPT if self.protocol == "corrected_text" else SYSTEM_PROMPT},
-            {"role": "user", "content": sentence if self.protocol == "corrected_text" else f"请检查这句话：\n{sentence}{hint}"},
+            {"role": "user", "content": user_content},
         ]
         headers = {}
         api_key = os.environ.get("DOCUMENT_CHECKER_CORRECTOR_API_KEY")
