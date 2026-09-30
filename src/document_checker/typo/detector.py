@@ -40,8 +40,8 @@ def error_label_index(id2label: dict) -> int:
 
 
 class ElectraDetector:
-    def __init__(self, model_dir: str = DEFAULT_MODEL_DIR, threshold: float = 0.5,
-                 device: str = "auto", batch_size: int = 8, max_tokens: int = 512):
+    def __init__(self, model_dir: str = DEFAULT_MODEL_DIR, threshold: float = 0.85,
+                 device: str = "auto", batch_size: int = 32, max_tokens: int = 512):
         if not 0 <= threshold <= 1 or batch_size < 1 or max_tokens < 1:
             raise ValueError("阈值、批量大小或 token 上限无效")
         import torch
@@ -125,7 +125,7 @@ class HeuristicDetector:
 
 
 def get_detector(prefer: str = "electra", model_dir: str | None = None,
-                 threshold: float = 0.5, device: str = "auto", strict: bool = False):
+                 threshold: float = 0.85, device: str = "auto", strict: bool = False):
     model_dir = model_dir or _default_model_dir()
     if prefer == "heuristic":
         if strict:

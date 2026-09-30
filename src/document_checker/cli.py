@@ -184,7 +184,7 @@ def main():
 
     t = sub.add_parser("typo", help="错别字检查")
     t.add_argument("docx")
-    t.add_argument("--threshold", type=float, default=0.5, help="ELECTRA 字级嫌疑阈值")
+    t.add_argument("--threshold", type=float, default=0.85, help="ELECTRA 字级嫌疑阈值")
     t.add_argument("--no-llm", action="store_true", help="不调用大模型精检（启发式兜底）")
     t.add_argument("--model", help="LLM 型号（或设置 DOCUMENT_CHECKER_CORRECTOR_MODEL）")
     t.add_argument("--detector-model-dir", help="ELECTRA 本地模型目录（或设置 CED_MODEL_DIR）")

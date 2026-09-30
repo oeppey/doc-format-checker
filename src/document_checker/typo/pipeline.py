@@ -99,7 +99,7 @@ def _locate(sentence, src: str, suspect_chars) -> int | None:
     return matches[0] if len(matches) == 1 else None
 
 
-def run_typo_check(path: str, threshold: float = 0.5, use_llm: bool = True,
+def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
                    llm_model: str | None = None, detector_backend=None,
                    corrector_backend=None, model=None, detector_model_dir: str | None = None,
                    detector_device: str = "auto", corrector_base_url: str | None = None,
