@@ -17,6 +17,7 @@ FIELDS = {
     "char_spacing": (set(), {"roles", "spacing_pt", "tolerance_pt"}),
     "page_number": (set(), {"dash", "alignment", "fonts", "size_pt", "footer_distance_cm", "tolerance_cm"}),
     "odd_even_setting": ({"enabled"}, set()),
+    "page_number_padding": ({"kind", "direction", "chars"}, set()),
     "heading_number": (set(), set()),
     "secrecy": (set(), {"fonts", "size_pt", "bold", "inner_space", "required"}),
     "attachment": (set(), {"indent_chars", "blank_lines_before", "forbid_trailing_punct"}),
@@ -99,6 +100,15 @@ def validate_ruleset(data: object, path: str) -> None:
             elif key in {"bold", "required", "inner_space", "forbid_trailing_punct", "enabled"}:
                 if not isinstance(value, bool):
                     _fail(field, "必须是布尔值")
+            elif key == "kind" and checker == "page_number_padding":
+                if value not in {"odd", "even"}:
+                    _fail(field, "必须是 odd 或 even")
+            elif key == "direction" and checker == "page_number_padding":
+                if value not in {"left", "right", "none"}:
+                    _fail(field, "必须是 left、right 或 none")
+            elif key == "chars" and checker == "page_number_padding":
+                if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 10:
+                    _fail(field, "必须是 0–10 的整数")
             elif key == "alignment":
                 if not isinstance(value, str) or value not in {"left", "center", "right"}:
                     _fail(field, "必须是 left、center 或 right")
@@ -116,6 +126,10 @@ def validate_ruleset(data: object, path: str) -> None:
                 _number(value, field, minimum=0.01)
             elif key in {"spacing_pt", "tolerance_pt", "blank_line_tolerance_pt", "tolerance_cm"}:
                 _number(value, field, minimum=0)
+        if checker == "page_number_padding" and (
+            (params["direction"] == "none") != (params["chars"] == 0)
+        ):
+            _fail(where, "不空时字数必须为 0，其余方向必须至少 1 字")
         if checker == "font_format" and not any(
             key in params for key in ("fonts", "ascii_fonts", "size_pt", "bold", "alignment")
         ):

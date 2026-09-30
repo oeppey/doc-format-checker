@@ -107,7 +107,7 @@ def test_odd_even_setting_and_padding_options(tmp_path):
     client = TestClient(create_app(data_dir=tmp_path / "templates"))
     catalog = {item["id"]: item for item in client.get("/api/catalog").json()["items"]}
     assert catalog["page_number.odd_padding"]["kind"] == "padding"
-    assert catalog["page_number.even_padding"]["capability"] == "needs_render"
+    assert catalog["page_number.even_padding"]["capability"] == "supported"
     sample = _upload(client, GOOD, "/api/templates/extract").json()
     options = {r["id"]: r for r in sample["candidates"]}
     assert options["page_number.odd_padding"]["expected"] == {
@@ -138,8 +138,13 @@ def test_odd_even_setting_and_padding_options(tmp_path):
     assert invalid.status_code == 422
     padding["expected"] = {"direction": "none", "value": 0, "unit": "char"}
     padding["enabled"] = True
-    unsupported = client.post("/api/templates/validate",
-                              json={"name": "视觉规则", "rules": [padding]})
-    assert unsupported.status_code == 422
+    missing_switch = client.post("/api/templates/validate",
+                                 json={"name": "缺少奇偶页设置", "rules": [padding]})
+    assert missing_switch.status_code == 422
+    valid = client.post("/api/templates/validate",
+                        json={"name": "结构规则", "rules": [switch, padding]})
+    assert valid.status_code == 200
+    assert {r["checker"] for r in valid.json()["compiled_rules"]} == {
+        "odd_even_setting", "page_number_padding"}
 
 

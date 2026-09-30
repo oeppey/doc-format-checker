@@ -115,7 +115,7 @@ def create_app(*, data_dir: Path = DEFAULT_DATA, rules_dir: Path = RULES_DIR,
 
     @app.get("/api/catalog")
     def catalog():
-        return {"version": VERSION, "items": CATALOG, "note": "仅 supported 和明确标注的 partial 子集可以启用；需渲染校验的奇偶页留字暂不启用"}
+        return {"version": VERSION, "items": CATALOG, "note": "仅 supported 和明确标注的 partial 子集可以启用；奇偶页留字按页脚字符单位缩进检查，无需渲染；视觉位置仍需页面预览验证"}
 
     @app.get("/api/templates")
     def list_templates():

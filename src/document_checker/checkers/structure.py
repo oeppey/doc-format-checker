@@ -40,6 +40,69 @@ def odd_even_setting(model, roles, params):
         actual="开启" if model.odd_even_header_footer else "关闭")]
 
 
+@register("page_number_padding")
+def page_number_padding(model, roles, params):
+    """Check character-unit indents of active PAGE-field footer stories from OOXML."""
+    kind = params["kind"]
+    direction = params["direction"]
+    chars = params["chars"]
+    if not model.odd_even_header_footer:
+        return [Finding(location="页面设置", message="奇偶页不同未开启，无法应用页码留字规则",
+                        expected="开启奇偶页不同", actual="关闭")]
+    expected_left = chars * 100 if direction == "left" else 0
+    expected_right = chars * 100 if direction == "right" else 0
+    expected = (f"左空 {chars} 字" if direction == "left" else
+                f"右空 {chars} 字" if direction == "right" else "两侧不留字")
+    stories = {}
+    for para in model.footer_paras:
+        stories.setdefault((para.section_index, para.kind), []).append(para)
+    seen = set()
+    findings = []
+    for section_index, section in enumerate(model.sections, 1):
+        if section.different_first_page_header_footer and section_index > 1:
+            note = f"第{section_index}节首页独立页脚的实际奇偶页无法从 DOCX 结构确定，页码留字未检查"
+            if note not in model.unchecked_parts:
+                model.unchecked_parts.append(note)
+        kinds = ("default", "first") if kind == "odd" and section_index == 1 and section.different_first_page_header_footer else (
+            ("default",) if kind == "odd" else ("even",))
+        for story_kind in kinds:
+            source = f"section{section_index}/{story_kind}/footer"
+            visited = set()
+            while source in model.story_links and source not in visited:
+                visited.add(source)
+                source = model.story_links[source]
+            if source == "未定义" or source in visited:
+                findings.append(Finding(location=f"第{section_index}节{story_kind}页脚",
+                                        message="页脚继承来源无法解析", expected=expected,
+                                        actual=source))
+                continue
+            if source in seen:
+                continue
+            seen.add(source)
+            match = re.fullmatch(r"section(\d+)/(default|first|even)/footer", source)
+            if match is None:
+                findings.append(Finding(location=f"第{section_index}节{story_kind}页脚",
+                                        message="页脚来源格式无法解析", expected=expected,
+                                        actual=source))
+                continue
+            paras = stories.get((int(match.group(1)), match.group(2)), [])
+            page_paras = [para for para in paras if para.has_page_field]
+            if not page_paras:
+                findings.append(Finding(location=paras[0].location if paras else f"第{section_index}节{story_kind}页脚",
+                                        message="页脚中没有自动页码域，无法检查留字",
+                                        expected=f"PAGE 域，{expected}", actual="无 PAGE 域"))
+                continue
+            for para in page_paras:
+                left, right = para.left_chars or 0, para.right_chars or 0
+                if (left, right) != (expected_left, expected_right):
+                    findings.append(Finding(
+                        location=para.location, message="页码留字不符合要求",
+                        expected=expected,
+                        actual=f"左空 {left / 100:g} 字、右空 {right / 100:g} 字",
+                        suggestion="在页码所在页脚段落设置字符单位左/右缩进"))
+    return findings
+
+
 @register("page_number")
 def page_number(model, roles, params):
     """页码格式。params: dash, alignment, fonts, size_pt, footer_distance_cm, tolerance_cm"""

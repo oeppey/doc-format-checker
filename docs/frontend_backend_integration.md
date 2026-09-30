@@ -15,7 +15,7 @@
 
 | 页面动作 | 后端入口 | 结果 |
 |---|---|---|
-| 打开模板页 | `GET /api/catalog`，`GET /api/templates` | 36 个候选检测项的能力状态；两套内置 YAML 模板及已保存的自定义模板 |
+| 打开模板页 | `GET /api/catalog`，`GET /api/templates` | 35 个候选检测项的能力状态；两套内置 YAML 模板及已保存的自定义模板 |
 | 上传样本 Word | `POST /api/templates/extract`，multipart `file` | 实际读到的候选格式、来源、混合值、未检查范围；候选均未启用 |
 | 编辑并保存 | `POST /api/templates/validate`，`POST /api/templates`，JSON | 单位和规则校验；保存标准化规则和编译后的可执行规则 |
 | 查看、删除 | `GET /api/templates/{id}`，`DELETE /api/templates/{id}` | 内置模板只读；自定义模板存于本机 `data/templates/` |
@@ -31,11 +31,11 @@
 
 预览接口：`GET /api/reviews/{review_id}/pages/{page_number}`、`GET /api/reviews/{review_id}/preview.pdf`；`DELETE /api/reviews/{review_id}` 可删除该次渲染文件。渲染文件存于 `data/reviews/`，包含文档内容，应按部署环境的数据保留策略清理。渲染失败时审查结果仍返回，页面明确显示失败原因。
 
-实测：人工 Word 样本 `02_body_font_second_run_bad.docx` 渲染 2 页；第二个 run 的字体错误映射到第 1 页两个黄色矩形，页面图片接口返回 200。浏览器中两页图片加载成功、Finding 可跳转标记、无脚本错误。新增 `tests/test_preview.py` 验证坐标与失败状态，并用真实 DOCX 验证红色错字坐标；浏览器另以「布署→部署」样本确认红框和问题列表跳转。LibreOffice 生成的分页可能与 Microsoft Word 有差异；原样程度需在目标字体和排版环境中对照验收。奇偶页留字已改为方向＋字数选项，并受「奇偶页不同」设置控制；视觉规则尚未实现，无法启用为自动检查。
+实测：人工 Word 样本 `02_body_font_second_run_bad.docx` 渲染 2 页；第二个 run 的字体错误映射到第 1 页两个黄色矩形，页面图片接口返回 200。浏览器中两页图片加载成功、Finding 可跳转标记、无脚本错误。新增 `tests/test_preview.py` 验证坐标与失败状态，并用真实 DOCX 验证红色错字坐标；浏览器另以「布署→部署」样本确认红框和问题列表跳转。LibreOffice 生成的分页可能与 Microsoft Word 有差异；原样程度需在目标字体和排版环境中对照验收。奇偶页留字已改为方向＋字数选项，并受「奇偶页不同」设置控制；启用后按页脚段落的字符单位左／右缩进检查，不依赖 PDF。此规则不证明实际页面视觉距离；后续节的独立首页页脚若无法确定奇偶页，会明确标为未检查。
 
 ## 检测项数量与能力
 
-- **36**：带 ID 的产品候选原子项，其中包含部分支持和待实现项。
+- **35**：带 ID 的产品候选原子项，其中包含部分支持和待实现项。
 - **10**：后端已注册的检查器类别。
 - **12**：每套内置 YAML 合并后的实际规则条数。
 - 旧页面 **29 行展示字段**和写死的“26 项”均不表示实际检测能力；新页面按编译结果显示生效规则数。

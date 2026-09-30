@@ -115,7 +115,8 @@ rules:
 | line_spacing | 固定行距 32 磅（大字版）/ 29.5 磅（小字版） |
 | char_spacing | 字符间距加宽 0.4 磅 / 标准 |
 | page_number | "— 1 —"格式、一字线、居中、宋体四号、页脚底端距离 1.75cm |
-| odd_even_setting | 奇偶页不同设置；奇偶页留字的视觉检测尚未实现 |
+| odd_even_setting | 奇偶页不同设置 |
+| page_number_padding | 奇偶页页码所在页脚段落的字符单位留字；不依赖 PDF，实际视觉距离另行核验 |
 | heading_number | 一、／（一）／1.／（1）层级形式，三四级右侧不空格，正文可疑编号 |
 | secrecy | 秘级位置（左上角顶格）、字体字号加粗、"秘 密"空一格 |
 | attachment | 左空两字、前文空行、名称后不加标点 |

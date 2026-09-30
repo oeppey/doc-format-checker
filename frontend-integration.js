@@ -62,13 +62,8 @@ openDetail = async function(id){
     $('dtPage').innerHTML = render(rules.filter(r => r.checker === 'page_setup' || r.checker === 'page_number' || r.checker === 'odd_even_setting'));
     $('dtFont').innerHTML = render(rules.filter(r => r.checker === 'font_format' || r.checker === 'char_spacing'));
     $('dtPara').innerHTML = render(rules.filter(r => r.checker === 'line_spacing'));
-    const pendingPadding=(t.rules || []).filter(r =>
-      r.id==='page_number.odd_padding' || r.id==='page_number.even_padding');
     $('dtPageNum').innerHTML = render(rules.filter(r =>
-      r.checker === 'page_number' || r.checker === 'odd_even_setting'))+
-      pendingPadding.map(r=>'<tr><td class="k">'+esc(byRuleId(r.id).label)+
-        '（需渲染校验）</td><td class="v" colspan="4">'+
-        esc(JSON.stringify(r.expected))+'</td></tr>').join('');
+      ['page_number','odd_even_setting','page_number_padding'].includes(r.checker)));
     $('dtExtra').innerHTML = render(rules.filter(r => ['secrecy','heading_number','attachment','signature'].includes(r.checker)));
     ['dc1','dc2','dc3','dc4','dc5'].forEach(id => $(id).textContent = '');
     $('paperDetail').innerHTML = '<p style="padding:30px">此处为版式示意。真实逐页预览将在 PDF 定位阶段接入。</p>';
@@ -183,12 +178,17 @@ updatePaddingControls = function(){
     curSpec?.candidates[Number(row.dataset.index)]?.id==='page_number.different_odd_even');
   const input=switchRow?.querySelector('.rule-value');
   if (input) input.onchange=updatePaddingControls;
-  const enabled=input?.value==='true';
+  const switchEnabled=switchRow?.querySelector('.rule-enabled');
+  if (switchEnabled) switchEnabled.onchange=updatePaddingControls;
+  const enabled=Boolean(switchEnabled?.checked) && input?.value==='true';
   document.querySelectorAll('#fmtGroups .rule-row').forEach(row=>{
     const id=curSpec?.candidates[Number(row.dataset.index)]?.id;
     if (id==='page_number.odd_padding' || id==='page_number.even_padding') {
       const direction=row.querySelector('.padding-direction');
       const count=row.querySelector('.rule-value');
+      const checkbox=row.querySelector('.rule-enabled');
+      if (!enabled) checkbox.checked=false;
+      checkbox.disabled=!enabled;
       direction.onchange=updatePaddingControls;
       direction.disabled=!enabled;
       if (direction.value==='none') count.value='0';
@@ -250,7 +250,9 @@ buildResult = function(){
         id.startsWith('page_number.') ? {part:'footer-all'} : {};
       if (candidates.some(r => r.id===id && JSON.stringify(r.scope)===JSON.stringify(scope)))
         throw new Error('这项规则已在列表中');
-      candidates.push({id,scope,expected:newExpected(meta.kind),enabled:false,
+      const expected = newExpected(meta.kind);
+      if (id === 'page_number.even_padding') expected.direction = 'left';
+      candidates.push({id,scope,expected,enabled:false,
         severity:'error',required:false});
       buildResult();
     } catch (err) { toast('err',err.message); }

@@ -298,3 +298,11 @@ P0 影响结论可信度，P1 影响模型与部署，P2 依赖结构或视觉�
 - 代码：删除 `signature` 的 `seal_expected` 分支与参数、目录项 `structural.seal_layout`（候选 36→35）、`DocModel.inline_image_count` 字段；`common.yaml` 与 `rules_schema.py` 同步。
 - 测试：移除印章拒绝用例，目录计数断言 36→35。
 - 文档：rule_standardization.md、format_rules.md、format_requirements_audit.md、TODO.md、gold-verification-checklist.md（Q7 仅覆盖页码留字）、frontend_backend_integration.md、README 同步；历史日志条目不改动。
+
+
+### 2026-09-29：奇偶页页码留字改为 OOXML 结构规则
+
+- 目录仍为 35 个候选项；已注册 checker 增至 11 类。奇数页／偶数页留字可分别启用，前提是模板同时启用「奇偶页不同」且期望开启。
+- 解析 PAGE 域所在页脚段落的有效 leftChars/rightChars，100 单位视为 1 字；按方向和整数字数比较。不依赖 DOCX→PDF，支持普通／偶数页脚、文档第 1 节首页页脚及跨节继承。
+- 后续节的独立首页页脚无法从 XML 确定实际奇偶页，明确记录未检查。结构规则不证明渲染后与版心边缘的视觉距离；逐页预览仍用于页面标注。
+- 验证：新增 tests/test_page_number_padding.py，API 规则校验用例同步更新；全量回归 .venv/Scripts/python.exe -m pytest -q：166 passed；CORS 预检冒烟通过。Linux/NVIDIA 实机部署尚未验证。

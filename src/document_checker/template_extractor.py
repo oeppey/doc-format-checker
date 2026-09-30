@@ -93,10 +93,34 @@ def extract_candidates(path: str) -> dict:
                lambda v: {"value": v, "unit": "char"}, role=role)
     add("page_number.different_odd_even", {"value": model.odd_even_header_footer},
         source="settings.xml", location="文档设置")
-    for rid, direction in (("page_number.odd_padding", "right"),
-                           ("page_number.even_padding", "left")):
-        add(rid, {"direction": direction, "value": 1, "unit": "char"},
-            source="建议缺省（非样本提取）", location="请用户确认")
+    for rid, kinds, default_direction in (
+        ("page_number.odd_padding", {"default", "first"}, "right"),
+        ("page_number.even_padding", {"even"}, "left"),
+    ):
+        observed = []
+        unsupported = []
+        if model.odd_even_header_footer:
+            for p in model.footer_paras:
+                if p.kind not in kinds or not p.has_page_field:
+                    continue
+                if p.kind == "first" and p.section_index > 1:
+                    continue
+                left, right = p.left_chars or 0, p.right_chars or 0
+                if (left and right) or any(v < 0 or v > 1000 or v % 100 for v in (left, right)):
+                    unsupported.append(p.location)
+                    continue
+                direction = "left" if left else "right" if right else "none"
+                observed.append(((direction, (left or right) // 100),
+                                 "页脚段落字符缩进", p.location))
+        if unsupported:
+            mixed.append({"id": rid, "values": [], "locations": unsupported,
+                          "message": "页码段落缩进不能唯一表示为 0–10 个整字，请人工设置标准"})
+        elif observed:
+            unique(rid, observed,
+                   lambda pair: {"direction": pair[0], "value": pair[1], "unit": "char"})
+        else:
+            add(rid, {"direction": default_direction, "value": 1, "unit": "char"},
+                source="建议缺省（非样本提取）", location="请用户确认")
     footer = [p for p in model.footer_paras if p.has_page_field]
     if footer:
         add("page_number.field", {"value": "PAGE"}, source="页码域", location=footer[0].location,

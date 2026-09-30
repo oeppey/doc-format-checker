@@ -64,6 +64,7 @@ class ParaInfo:
     line_multiple: float | None
     line_rule: str | None
     first_line_chars: int | None
+    left_chars: int | None
     right_chars: int | None
     runs: list[RunInfo] = field(default_factory=list)
     location: str = ""
@@ -98,6 +99,8 @@ class FooterPara:
     location: str = "页脚"
     section_index: int = 0
     kind: str = "default"
+    left_chars: int | None = None
+    right_chars: int | None = None
 
 
 @dataclass
@@ -107,6 +110,7 @@ class SectionInfo:
     left_cm: float | None
     right_cm: float | None
     footer_distance_cm: float | None
+    different_first_page_header_footer: bool = False
 
 
 @dataclass
@@ -181,6 +185,7 @@ def _paragraph_values(ppr) -> dict:
     indent = ppr.find(qn("w:ind"))
     if indent is not None:
         for attr, name in (("w:firstLineChars", "first_line_chars"),
+                           ("w:leftChars", "left_chars"),
                            ("w:rightChars", "right_chars")):
             if indent.get(qn(attr)) is not None:
                 values[name] = int(indent.get(qn(attr)))
@@ -253,7 +258,7 @@ def _parse_paragraph(p, index: int, styles=None, location: str = "") -> ParaInfo
         for style in _style_chain(p.style):
             layers.append((f"paragraph_style:{style.name}", _paragraph_values(style.element.pPr)))
     layers.append(("doc_defaults", _paragraph_values(_defaults(styles, paragraph=True))))
-    keys = ("alignment", "line_pt", "line_multiple", "line_rule", "first_line_chars", "right_chars")
+    keys = ("alignment", "line_pt", "line_multiple", "line_rule", "first_line_chars", "left_chars", "right_chars")
     values, sources = _effective(layers, keys)
     # w:line uses 1/240 of a line for auto, and 1/20 pt for exact/atLeast.
     # A direct multiple value must not inherit a point value from a style.
@@ -281,6 +286,7 @@ def _parse_story_para(p, location: str, section_index: int, kind: str, styles) -
     return FooterPara(
         text=full_text, alignment=parsed.alignment, has_page_field=has_page,
         runs=parsed.runs, location=location, section_index=section_index, kind=kind,
+        left_chars=parsed.left_chars, right_chars=parsed.right_chars,
     )
 
 
@@ -332,6 +338,7 @@ def parse_document(path: str) -> DocModel:
             top_cm=cm(section.top_margin), bottom_cm=cm(section.bottom_margin),
             left_cm=cm(section.left_margin), right_cm=cm(section.right_margin),
             footer_distance_cm=cm(section.footer_distance),
+            different_first_page_header_footer=bool(section.different_first_page_header_footer),
         ))
         for kind in ("default", "first", "even"):
             if kind == "first" and not section.different_first_page_header_footer:

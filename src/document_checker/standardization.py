@@ -33,8 +33,8 @@ _ROWS = [
     ("page_number.font_size", "页码与版式", "页码字号", "font_size", "supported"),
     ("page_number.vertical_alignment", "页码与版式", "页码上下位置", "alignment", "unavailable"),
     ("page_number.different_odd_even", "页码与版式", "奇偶页不同", "bool", "supported"),
-    ("page_number.odd_padding", "页码与版式", "奇数页页码留空", "padding", "needs_render"),
-    ("page_number.even_padding", "页码与版式", "偶数页页码留空", "padding", "needs_render"),
+    ("page_number.odd_padding", "页码与版式", "奇数页页码留空", "padding", "supported"),
+    ("page_number.even_padding", "页码与版式", "偶数页页码留空", "padding", "supported"),
     ("page_number.continuous_on_attachment", "页码与版式", "附件连续编页码", "bool", "unavailable"),
     ("structural.secrecy_position", "其他规范要求", "密级位置", "position", "partial"),
     ("structural.secrecy_inner_space", "其他规范要求", "密级字间空格", "bool", "partial"),
@@ -228,6 +228,10 @@ def compile_rules(raw_rules: list[dict], template_id: str, name: str) -> tuple[l
             raise InvalidRuleError(f"重复检测项：{rule['id']} {rule['scope']}")
         seen.add(key)
     enabled = [r for r in rules if r["enabled"]]
+    if any(r["id"] in {"page_number.odd_padding", "page_number.even_padding"} for r in enabled):
+        if not any(r["id"] == "page_number.different_odd_even" and r["expected"]["value"]
+                   for r in enabled):
+            raise InvalidRuleError("奇偶页页码留字要求同时启用「奇偶页不同」且设为是")
     if not enabled:
         raise InvalidRuleError("请至少启用一项当前可自动检查的规则")
     compiled = []
@@ -266,6 +270,14 @@ def compile_rules(raw_rules: list[dict], template_id: str, name: str) -> tuple[l
                 "checker": "odd_even_setting",
                 "params": {"enabled": exp["value"]}, "severity": r["severity"],
             }
+        elif rid in {"page_number.odd_padding", "page_number.even_padding"}:
+            side = "odd" if rid.endswith("odd_padding") else "even"
+            groups[f"page-number-{side}-padding"] = {
+                "id": f"page-number-{side}-padding", "name": BY_ID[rid]["label"],
+                "checker": "page_number_padding",
+                "params": {"kind": side, "direction": exp["direction"], "chars": exp["value"]},
+                "severity": r["severity"],
+            }
         elif rid in PAGE_NUMBER_IDS:
             key = "page-number"
             g = groups.setdefault(key, {"id": key, "name": "页码", "checker": "page_number",
@@ -294,7 +306,7 @@ def compile_rules(raw_rules: list[dict], template_id: str, name: str) -> tuple[l
         members = [r for r in enabled if (
             (group["id"] == f"font-{r['scope'].get('role')}" and r["id"] in
              {"font.cjk", "font.latin", "font.size", "font.bold", "paragraph.alignment"})
-            or (group["id"] == "page-number" and r["id"] in PAGE_NUMBER_IDS)
+            or (group["id"] == "page-number" and r["id"] in {"page_number.field", "page_number.alignment", "page_number.font_cjk", "page_number.font_size"})
         )]
         if len({r["severity"] for r in members}) > 1:
             raise InvalidRuleError(f"{group['id']} 中的检测项级别不同，当前合并检查器要求级别一致")
