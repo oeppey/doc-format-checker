@@ -38,7 +38,7 @@ def corrected_text_to_fixes(raw: str, sentence: str) -> list[dict]:
 
 class OpenAICorrector:
     def __init__(self, model: str | None = None, base_url: str | None = None,
-                 protocol: str | None = None, client=None):
+                 protocol: str | None = None, client=None, suspect_hint: bool = False):
         self.model = model or os.environ.get("DOCUMENT_CHECKER_CORRECTOR_MODEL")
         if not self.model:
             raise ValueError("未指定精检模型；请设置 --model 或 DOCUMENT_CHECKER_CORRECTOR_MODEL")
@@ -55,6 +55,9 @@ class OpenAICorrector:
             raise ValueError("精检超时必须大于零")
         import httpx
         self.client = client or httpx.Client(timeout=timeout)
+        # corrected_text 协议的嫌疑字提示经 A/B 实验证实有害（见 docs/corrector_eval.md），
+        # 默认关闭，仅供提示词变体实验显式开启。
+        self.suspect_hint = suspect_hint
 
     def correct(self, sentence: str, suspect_chars=None) -> list[dict]:
         hint = ""
@@ -62,7 +65,7 @@ class OpenAICorrector:
             chars = "、".join(f"「{c}」" for _, c, _ in suspect_chars[:6])
             if self.protocol == "json":
                 hint = f"\n检测器标记的疑似错字位置：{chars}（仅供参考）。"
-            else:
+            elif self.suspect_hint:
                 hint = f"\n检测器标记的疑似错字：{chars}（仅供参考，请重点核对）。"
         if self.protocol == "corrected_text":
             user_content = f"{sentence}{hint}"

@@ -77,7 +77,7 @@ def main():
 
     detector = ElectraDetector(threshold=args.threshold, device="auto")
     corrector = OpenAICorrector(model=args.corrector_model, base_url=args.corrector_url,
-                                protocol="corrected_text")
+                                protocol="corrected_text", suspect_hint=True)
 
     wrong_texts = [w["text"] for w in wrong_items]
     wrong_det = detect_all(detector, wrong_texts)

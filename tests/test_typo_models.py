@@ -36,13 +36,23 @@ def test_4b_suspect_hint_in_request():
     seen = []
     corrector = OpenAICorrector(
         model="twnlp/ChineseErrorCorrector4-4B", base_url="http://127.0.0.1:8000/v1",
-        client=_mock_client("各单位要认真部署工作。", seen),
+        client=_mock_client("各单位要认真部署工作。", seen), suspect_hint=True,
     )
     corrector.correct("各单位要认真布署工作。", [(6, "布", 0.91)])
     payload = seen[0].read().decode("utf-8")
     assert "疑似错字：「布」" in payload
     seen.clear()
     corrector.correct("各单位要认真布署工作。")
+    assert "疑似错字" not in seen[0].read().decode("utf-8")
+
+
+def test_4b_suspect_hint_off_by_default():
+    seen = []
+    corrector = OpenAICorrector(
+        model="twnlp/ChineseErrorCorrector4-4B", base_url="http://127.0.0.1:8000/v1",
+        client=_mock_client("各单位要认真部署工作。", seen),
+    )
+    corrector.correct("各单位要认真布署工作。", [(6, "布", 0.91)])
     assert "疑似错字" not in seen[0].read().decode("utf-8")
 
 
