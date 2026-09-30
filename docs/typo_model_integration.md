@@ -30,6 +30,16 @@ ELECTRA 权重由 Windows 本机 scp 直传（389 MB，revision b58d6b 字节级
     export CED_MODEL_DIR=~/doc-format-checker/data/models/ChineseErrorDetectorElectra
     .venv/bin/python scripts/typo_model_smoke.py --detector-model-dir $CED_MODEL_DIR --device cuda --threshold 0.8
 
+## 4B 真实精检冒烟（2026-09-30，zzx GPU 5）
+
+部署：vLLM 0.30 独立环境（`~/vllm-env`，与项目 venv 隔离），权重在 `~/models/ChineseErrorCorrector4-4B`，`--max-model-len 2048 --gpu-memory-utilization 0.9`，服务 `http://127.0.0.1:8000/v1`。启动期踩过 FlashInfer sampler JIT 与系统 nvcc 不兼容的坑，以 `VLLM_USE_FLASHINFER_SAMPLER=0` 回退 native sampler 解决。
+
+结果：`typo_model_smoke.py --corrector-url http://127.0.0.1:8000/v1 --corrector-model twnlp/ChineseErrorCorrector4-4B --corrector-protocol corrected_text` 全链路通过——ELECTRA 筛出的两个嫌疑句分别得到 4B 修正「布→部」（offset 4）和「按→安」（offset 1），差分校验通过，corrector 字段显示 real service 而非回退。
+
+实测数据：单句精检延迟约 **0.85 秒**（含 think 段，约 87 个补全 token）；vLLM 按 0.9 显存利用率预占，GPU 5 占用约 **42 GiB**。注意 zzx 是共享服务器，其余各卡也有 42–47 GiB 被他人任务占用——回答前端「并发与资源抢占」问题时须按共享环境估算。
+
+已观察到的精度边界（不作结论，待 T-02 标定）：对「项目已经布署完成，请尽快按排检查」这种一句双错，4B 只改了「按排」漏了「布署」；ELECTRA 也会把正常的「检」字标过阈值（0.803）。
+
 脚本仅在提供 --corrector-url 与 --corrector-model 后调用真实精检服务；未提供时输出明确的 not tested。
 
 ## 在 NVIDIA Linux 开发服务器上运行
