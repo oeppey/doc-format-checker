@@ -302,6 +302,65 @@ def test_punct_only_suspect_skips_corrector(tmp_path):
     assert report.failed_sentences == 0
 
 
+def test_validator_rejection_is_not_failure(tmp_path):
+    """模型整句改写被校验器拒绝 → 记校验拒绝，不记精检失败，状态不受影响。"""
+    from document_checker.typo.detector import SuspectResult
+
+    docx = tmp_path / "reject.docx"
+    doc = Document()
+    doc.add_paragraph("今天我们开展文档检查工作，确保质量可靠。")
+    doc.save(docx)
+
+    class FlagDetector:
+        def detect(self, sentences):
+            return [SuspectResult(0.9, [(3, "展", 0.9)])]
+
+    seen = []
+    corrector = OpenAICorrector(
+        model="twnlp/ChineseErrorCorrector4-4B", base_url="http://127.0.0.1:8000/v1",
+        client=_mock_client("今天，我们认真开展文档检查与质量保障工作，确保成果可靠。", seen),
+    )
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(FlagDetector(), "electra:mock"),
+        corrector_backend=(corrector, "llm:mock"),
+        use_dict_fallback=False,
+    )
+    assert report.rejected_sentences == 1
+    assert report.failed_sentences == 0
+    assert report.status != "运行失败"
+    assert "校验拒绝" in report.render_markdown()
+    assert "未通过校验" in report.dropped_detail[0]["reason"]
+
+
+def test_service_error_is_failure(tmp_path):
+    """HTTP 服务错误仍是真失败，状态为运行失败。"""
+    from document_checker.typo.detector import SuspectResult
+
+    docx = tmp_path / "svc_fail.docx"
+    doc = Document()
+    doc.add_paragraph("今天我们开展文档检查工作，确保质量可靠。")
+    doc.save(docx)
+
+    class FlagDetector:
+        def detect(self, sentences):
+            return [SuspectResult(0.9, [(3, "展", 0.9)])]
+
+    corrector = OpenAICorrector(
+        model="twnlp/ChineseErrorCorrector4-4B", base_url="http://127.0.0.1:8000/v1",
+        client=_mock_client("ignored", status=503),
+    )
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(FlagDetector(), "electra:mock"),
+        corrector_backend=(corrector, "llm:mock"),
+        use_dict_fallback=False,
+    )
+    assert report.failed_sentences == 1
+    assert report.rejected_sentences == 0
+    assert report.status == "运行失败"
+
+
 def test_strict_mode_requires_corrector_service(tmp_path, monkeypatch):
     from document_checker.typo.detector import SuspectResult
 

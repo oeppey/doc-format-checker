@@ -37,6 +37,7 @@ class TypoReport:
     dict_fallback: int = 0
     punct_filtered: int = 0
     dropped_suggestions: int = 0
+    rejected_sentences: int = 0
     dropped_detail: list[dict] = field(default_factory=list)
     failed_sentences: int = 0
     unchecked_parts: list[str] = field(default_factory=list)
@@ -70,7 +71,8 @@ class TypoReport:
             f"粗筛嫌疑 {self.suspect} 句（仅标点嫌疑 {self.punct_filtered} 句不进精检），"
             f"确认问题 {len(self.findings)} 处"
             f"（其中词表兜底 {self.dict_fallback} 处），"
-            f"低置信建议过滤 {self.dropped_suggestions} 条，失败 {self.failed_sentences} 句", "",
+            f"低置信建议过滤 {self.dropped_suggestions} 条，"
+            f"精检建议被校验拒绝 {self.rejected_sentences} 句，失败 {self.failed_sentences} 句", "",
         ]
         if self.skip_reasons:
             lines.append("- 过滤原因：" + "；".join(f"{k} {v} 句" for k, v in sorted(self.skip_reasons.items())))
@@ -128,7 +130,7 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
                    corrector_protocol: str | None = None, require_models: bool = False,
                    use_dict_fallback: bool = True) -> TypoReport:
     from .detector import get_detector
-    from .corrector import HeuristicCorrector
+    from .corrector import CorrectionRejected, HeuristicCorrector
     from .confusion import dict_fallback_fixes
     from .service_corrector import OpenAICorrector
 
@@ -241,6 +243,13 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
                     para_index=s.para_index + 1, sent_start=s.start + off,
                     sentence=s.text, original=src, suggestion=dst,
                     reason=fix.get("理由", ""), score=res.score, source=cor_name))
+        except CorrectionRejected as exc:
+            # 模型给了回答但未通过校验：句子已经过初筛与兜底，按低置信留痕，不算失败
+            report.rejected_sentences += 1
+            report.dropped_detail.append({
+                "para_index": s.para_index + 1, "sent_start": s.start,
+                "original": "", "suggestion": "",
+                "reason": f"精检建议未通过校验：{exc}"})
         except Exception as exc:
             report.failed_sentences += 1
             report.unchecked_parts.append(

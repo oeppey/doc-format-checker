@@ -362,7 +362,7 @@ renderReview = function(){
     '<div class="fmt-group"><div class="fg-hd"><b>覆盖与运行状态</b></div><div class="fmt-rows" style="padding:12px">'+
     '检测器：'+esc(t.detector_name)+'；精检：'+esc(t.corrector_name)+'<br>'+
     '格式未检查：'+esc((f.unchecked_parts||[]).join('；')||'无')+'<br>'+
-    '错字过滤 '+t.skipped+' 句，失败 '+t.failed_sentences+' 句；未检查：'+
+    '错字过滤 '+t.skipped+' 句，失败 '+t.failed_sentences+' 句，校验拒绝 '+(t.rejected_sentences||0)+' 句；未检查：'+
     esc((t.unchecked_parts||[]).join('；')||'无')+'</div></div></div>'+
     '<div class="review-preview-column">'+previewHtml+'</div></div>';
 };

@@ -15,6 +15,14 @@ SYSTEM_PROMPT = """你是公文错别字检查器。只检查并修正错别字�
 没有错误时输出 []。不要输出 JSON 以外的内容。"""
 
 
+class CorrectionRejected(ValueError):
+    """模型给出了回答但内容未通过校验（改写幅度、JSON 结构、保护词等）。
+
+    与服务故障（HTTP/连接/响应结构无效）区分：被拒绝的句子已经过
+    初筛与词表兜底检查，不计入精检失败，按低置信建议过滤并留痕。
+    """
+
+
 def _edit_distance(a: str, b: str, limit: int = 1) -> int:
     """Bounded Levenshtein distance; values above limit need no exact result."""
     if abs(len(a) - len(b)) > limit:
@@ -47,28 +55,28 @@ def _overlaps_protected(sentence: str, src: str, offset: int | None = None) -> b
 
 def validate_corrections(items: object, sentence: str) -> list[dict]:
     if not isinstance(items, list):
-        raise ValueError("精检结果必须是 JSON 数组")
+        raise CorrectionRejected("精检结果必须是 JSON 数组")
     valid = []
     for item in items:
         if not isinstance(item, dict):
-            raise ValueError("精检数组元素必须是对象")
+            raise CorrectionRejected("精检数组元素必须是对象")
         src, dst = item.get("原文"), item.get("改为")
         offset = item.get("offset")
         if not isinstance(src, str) or not isinstance(dst, str) or (not src and not dst):
-            raise ValueError("精检结果缺少有效的原文或改为字段")
+            raise CorrectionRejected("精检结果缺少有效的原文或改为字段")
         if offset is not None:
             if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
-                raise ValueError("精检位置无效")
+                raise CorrectionRejected("精检位置无效")
             if offset > len(sentence) or sentence[offset:offset + len(src)] != src:
-                raise ValueError("精检位置与原句不符")
+                raise CorrectionRejected("精检位置与原句不符")
         elif not src or src not in sentence:
-            raise ValueError(f"建议片段不在原句中或未发生修改：{src!r}")
+            raise CorrectionRejected(f"建议片段不在原句中或未发生修改：{src!r}")
         if src == dst:
-            raise ValueError(f"建议片段未发生修改：{src!r}")
+            raise CorrectionRejected(f"建议片段未发生修改：{src!r}")
         if len(src) > 12 or _edit_distance(src, dst) > 1:
-            raise ValueError(f"建议超出单处错别字修改范围：{src!r} → {dst!r}")
+            raise CorrectionRejected(f"建议超出单处错别字修改范围：{src!r} → {dst!r}")
         if _overlaps_protected(sentence, src, offset):
-            raise ValueError(f"建议改动受保护术语：{src!r}")
+            raise CorrectionRejected(f"建议改动受保护术语：{src!r}")
         result = {"原文": src, "改为": dst, "理由": str(item.get("理由", ""))}
         if offset is not None:
             result["offset"] = offset
@@ -83,7 +91,7 @@ def _parse_and_validate(raw: str, sentence: str) -> list[dict]:
     try:
         items = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise ValueError(f"精检结果不是有效 JSON：{exc}") from exc
+        raise CorrectionRejected(f"精检结果不是有效 JSON：{exc}") from exc
     return validate_corrections(items, sentence)
 
 

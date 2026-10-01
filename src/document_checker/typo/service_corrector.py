@@ -5,7 +5,8 @@ import difflib
 import os
 import re
 
-from .corrector import SYSTEM_PROMPT, _edit_distance, _parse_and_validate, validate_corrections
+from .corrector import (SYSTEM_PROMPT, CorrectionRejected, _edit_distance,
+                        _parse_and_validate, validate_corrections)
 
 CORRECTED_TEXT_PROMPT = (
     "只纠正下句中的错别字，保持其他文字、标点和空白不变。"
@@ -16,10 +17,10 @@ _THINK_RE = re.compile(r"<think>.*?</think>", re.IGNORECASE | re.DOTALL)
 
 def corrected_text_to_fixes(raw: str, sentence: str) -> list[dict]:
     if "<think>" in raw.lower() and not _THINK_RE.search(raw):
-        raise ValueError("4B 输出的思考段未闭合")
+        raise CorrectionRejected("4B 输出的思考段未闭合")
     corrected = _THINK_RE.sub("", raw).strip()
     if not corrected:
-        raise ValueError("精检模型未返回纠正后的句子")
+        raise CorrectionRejected("精检模型未返回纠正后的句子")
     if corrected == sentence:
         return []
     items = []
@@ -29,10 +30,10 @@ def corrected_text_to_fixes(raw: str, sentence: str) -> list[dict]:
             continue
         src, dst = sentence[i1:i2], corrected[j1:j2]
         if len(src) > 2 or len(dst) > 2 or _edit_distance(src, dst) > 1:
-            raise ValueError("模型改写幅度超过单处错别字范围")
+            raise CorrectionRejected("模型改写幅度超过单处错别字范围")
         items.append({"原文": src, "改为": dst, "理由": "模型建议", "offset": i1})
     if len(items) > 3:
-        raise ValueError("模型对单句提出过多修改，需人工复核")
+        raise CorrectionRejected("模型对单句提出过多修改，需人工复核")
     return validate_corrections(items, sentence)
 
 
