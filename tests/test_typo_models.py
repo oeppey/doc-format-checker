@@ -222,6 +222,83 @@ def test_dict_fallback_fixes_offsets():
     assert dict_fallback_fixes("部署工作已完成。") == []
 
 
+def test_dict_fallback_context_guard():
+    from document_checker.typo.confusion import dict_fallback_fixes
+
+    # 跨界拼接不报
+    assert dict_fallback_fixes("本轮投资全部到位，工作完成。") == []
+    assert dict_fallback_fixes("法官理应熟悉相关法律条文。") == []
+    assert dict_fallback_fixes("各单位按排名顺序依次申报。") == []
+    assert dict_fallback_fixes("这项工作一贯切实有效推进。") == []
+    # 真错字仍报
+    fixes = dict_fallback_fixes("服务业发展资全官理办法")
+    assert [(f["原文"], f["offset"]) for f in fixes] == [("资全", 5), ("官理", 7)]
+    assert dict_fallback_fixes("紧密围绕决策布署开展工作。")
+
+
+def test_cross_validation_drops_off_suspect_fix(tmp_path):
+    """模型建议位置不在初筛嫌疑范围内 → 低置信过滤；在范围内 → 保留。"""
+    from document_checker.typo.detector import SuspectResult
+
+    docx = tmp_path / "cross.docx"
+    doc = Document()
+    doc.add_paragraph("依法依规追究相应责任，构成犯罪追究刑责。")
+    doc.save(docx)
+
+    class FlagDetector:
+        def detect(self, sentences):
+            return [SuspectResult(0.9, [(7, "应", 0.9)])]  # 只标「应」
+
+    class MixedCorrector:
+        def correct(self, sentence, suspect_chars=None):
+            return [
+                {"原文": "依", "改为": "一", "理由": "幻觉", "offset": 0},   # 不在嫌疑范围
+                {"原文": "应", "改为": "因", "理由": "命中", "offset": 7},   # 在嫌疑范围
+            ]
+
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(FlagDetector(), "electra:mock"),
+        corrector_backend=(MixedCorrector(), "llm:mock"),
+        use_dict_fallback=False,
+    )
+    assert report.dropped_suggestions == 1
+    assert report.dropped_detail[0]["original"] == "依"
+    assert len(report.findings) == 1
+    assert report.findings[0].original == "应"
+
+
+def test_punct_only_suspect_skips_corrector(tmp_path):
+    """嫌疑字全是标点时不调精检，计数可追踪。"""
+    from document_checker.typo.detector import SuspectResult
+
+    docx = tmp_path / "punct.docx"
+    doc = Document()
+    doc.add_paragraph("地方财政部门、业务主管部门共同推进工作。")
+    doc.save(docx)
+
+    class PunctDetector:
+        def detect(self, sentences):
+            return [SuspectResult(0.99, [(5, "、", 0.99)])]
+
+    calls = []
+
+    class CountingCorrector:
+        def correct(self, sentence, suspect_chars=None):
+            calls.append(sentence)
+            return []
+
+    report = run_typo_check(
+        str(docx),
+        detector_backend=(PunctDetector(), "electra:mock"),
+        corrector_backend=(CountingCorrector(), "llm:mock"),
+        use_dict_fallback=False,
+    )
+    assert report.punct_filtered == 1
+    assert calls == []
+    assert report.failed_sentences == 0
+
+
 def test_strict_mode_requires_corrector_service(tmp_path, monkeypatch):
     from document_checker.typo.detector import SuspectResult
 

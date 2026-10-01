@@ -37,17 +37,36 @@ FALLBACK_PAIRS = [
 ]
 
 
+# 语境守卫：错词若是「前词尾字＋后词首字」的跨界拼接则不报。
+# pre：错词前一字在集合内时跳过（如「投资全部」含「资全」）；
+# post：错词后一字在集合内时跳过（如「按排名」含「按排」）。
+FALLBACK_EXCLUDE = {
+    "资全": {"pre": "投合外集增引工"},   # 投资/合资/外资/集资/增资/引资/工资＋全…
+    "官理": {"pre": "法警教长军"},       # 法官/警官/教官/长官/军官＋理…
+    "按排": {"post": "名序位期班"},      # 按排名/排序/排位/排期/排班
+    "贯切": {"pre": "一"},               # 一贯切实
+    "布署": {"pre": "发"},               # 发布署名
+}
+
+
 def dict_fallback_fixes(sentence: str) -> list[dict]:
     """对单句做确定性词表检查，返回与精检器同构的 fixes（含 offset）。"""
     from .corrector import validate_corrections
 
     items = []
     for wrong, right, kind in FALLBACK_PAIRS:
+        guard = FALLBACK_EXCLUDE.get(wrong, {})
         start = 0
         while (pos := sentence.find(wrong, start)) >= 0:
+            start = pos + len(wrong)
+            prev = sentence[pos - 1] if pos > 0 else ""
+            nxt = sentence[pos + len(wrong)] if pos + len(wrong) < len(sentence) else ""
+            if prev and prev in guard.get("pre", ""):
+                continue
+            if nxt and nxt in guard.get("post", ""):
+                continue
             items.append({"原文": wrong, "改为": right,
                           "理由": f"词表兜底：{kind}字误写", "offset": pos})
-            start = pos + len(wrong)
     return validate_corrections(items, sentence)
 
 

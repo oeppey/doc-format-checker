@@ -35,6 +35,9 @@ class TypoReport:
     skip_reasons: dict[str, int] = field(default_factory=dict)
     suspect: int = 0
     dict_fallback: int = 0
+    punct_filtered: int = 0
+    dropped_suggestions: int = 0
+    dropped_detail: list[dict] = field(default_factory=list)
     failed_sentences: int = 0
     unchecked_parts: list[str] = field(default_factory=list)
     detector_name: str = ""
@@ -64,8 +67,10 @@ class TypoReport:
             f"- 状态：**{self.status}**",
             f"- 检测器：{self.detector_name}；精检：{self.corrector_name}",
             f"- 句子：共 {self.total_sentences} 句，过滤 {self.skipped} 句，"
-            f"粗筛嫌疑 {self.suspect} 句，确认问题 {len(self.findings)} 处"
-            f"（其中词表兜底 {self.dict_fallback} 处），失败 {self.failed_sentences} 句", "",
+            f"粗筛嫌疑 {self.suspect} 句（仅标点嫌疑 {self.punct_filtered} 句不进精检），"
+            f"确认问题 {len(self.findings)} 处"
+            f"（其中词表兜底 {self.dict_fallback} 处），"
+            f"低置信建议过滤 {self.dropped_suggestions} 条，失败 {self.failed_sentences} 句", "",
         ]
         if self.skip_reasons:
             lines.append("- 过滤原因：" + "；".join(f"{k} {v} 句" for k, v in sorted(self.skip_reasons.items())))
@@ -86,6 +91,21 @@ class TypoReport:
                       "未发现已检查范围内的错别字。" if self.status in ("未检查", "运行失败") else "未发现错别字。"]
         lines.append("")
         return "\n".join(lines)
+
+
+PUNCT_CHARS = set("，、。；：？！“”‘’（）《》〈〉—…·")
+
+
+def _covered_by_suspect(off: int, src: str, suspect_chars) -> bool:
+    """交叉验证：精检建议的位置须与初筛嫌疑字重叠（ELECTRA 提供字级位置时）。
+
+    实测（docs/corrector_eval.md 第 8 节）：真实文档上 4B 的幻觉建议位置
+    大多不在嫌疑范围内；检测器未给字级位置（启发式）时不做此过滤。
+    """
+    if not suspect_chars:
+        return True
+    n = max(len(src), 1)
+    return any(off < c + len(ch) and c < off + n for c, ch, _ in suspect_chars)
 
 
 def _locate(sentence, src: str, suspect_chars) -> int | None:
@@ -192,6 +212,9 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
         if index in truncated or res is None:
             continue
         report.suspect += 1
+        if res.suspect_chars and all(ch in PUNCT_CHARS for _, ch, _ in res.suspect_chars):
+            report.punct_filtered += 1
+            continue  # 仅标点嫌疑不进精检：错字检查不管标点，且实测这类嫌疑全是噪声
         try:
             fixes = corrector.correct(s.text, res.suspect_chars)
             for fix in fixes:
@@ -207,6 +230,13 @@ def run_typo_check(path: str, threshold: float = 0.85, use_llm: bool = True,
                 if any(fp == s.para_index + 1 and abs_start < fe and fs < abs_start + len(src)
                        for fp, fs, fe in fallback_spans):
                     continue  # 词表兜底已报同一位置，模型建议去重
+                if not _covered_by_suspect(off, src, res.suspect_chars):
+                    report.dropped_suggestions += 1
+                    report.dropped_detail.append({
+                        "para_index": s.para_index + 1, "sent_start": abs_start,
+                        "original": src, "suggestion": dst,
+                        "reason": "建议位置不在初筛嫌疑范围内，按低置信过滤"})
+                    continue
                 report.findings.append(TypoFinding(
                     para_index=s.para_index + 1, sent_start=s.start + off,
                     sentence=s.text, original=src, suggestion=dst,
