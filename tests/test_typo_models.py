@@ -234,6 +234,9 @@ def test_dict_fallback_context_guard():
     fixes = dict_fallback_fixes("服务业发展资全官理办法")
     assert [(f["原文"], f["offset"]) for f in fixes] == [("资全", 5), ("官理", 7)]
     assert dict_fallback_fixes("紧密围绕决策布署开展工作。")
+    # 监官已收录（财政部当地监管局为固定机构名）
+    fixes = dict_fallback_fixes("并抄送财政部当地监官局。")
+    assert [(f["原文"], f["改为"]) for f in fixes] == [("监官", "监管")]
 
 
 def test_cross_validation_drops_off_suspect_fix(tmp_path):
