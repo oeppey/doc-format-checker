@@ -60,7 +60,15 @@ sudo apt install libreoffice-writer-nogui    # 或完整 libreoffice
 # 对外提供服务（前端在另一台机器时）
 export DOCUMENT_CHECKER_CORS_ORIGINS="http://前端地址:端口"
 python -m uvicorn document_checker.api:app --host 0.0.0.0 --port 8765
+
+# 或用统一启动脚本（推荐）：环境变量带默认值、端口参数、旧进程清理、
+# nohup 后台运行、PID 文件、启动后健康检查
+bash scripts/start_api.sh --port 8765
+# 浏览器访问 http://<服务器IP>:8765/ 即为完整前端页面（API 自带静态托管，
+# 前端走相对路径 /api，同域同源，无需 nginx）
 ```
+
+防火墙需放行对应端口（如 `sudo ufw allow 8765/tcp`）；脚本只保证监听 `0.0.0.0`，端口能否从外网到达取决于主机防火墙或云安全组。目标服务器部署时可用环境变量覆盖脚本默认值（ELECTRA 权重路径、4B 服务地址等，见脚本头部注释）；ELECTRA 缺失时服务仍可启动，错字检查按「未检查」降级。
 
 **字体是硬前提**：预览渲染和坐标映射必须与用户 Word 使用同一套字体（方正仿宋_GBK、方正小标宋_GBK、方正黑体/楷体 GBK、宋体）。把字体文件装入 `/usr/share/fonts/` 后执行 `fc-cache -f`，用 `fc-list | grep -i 方正` 核对 fontconfig 识别的名字与 Word 中的字体名一致；缺字体会被替换，导致分页和坐标整体偏移。方正字体有授权要求，部署前确认许可。模型部署与复现细节见 [错字模型接入与验证](docs/typo_model_integration.md)。
 
